@@ -26,7 +26,7 @@ on:
           - production
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build-web:
@@ -57,6 +57,20 @@ jobs:
         with:
           name: web-dist
           path: dist
+
+      - name: Zip web artifact
+        run: |
+          cd dist
+          zip -r ../cfblog-web-${{ github.ref_name || 'manual' }}.zip .
+
+      - name: Upload web asset to release
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release upload "${{ github.ref_name }}" \
+            "cfblog-web-${{ github.ref_name }}.zip" \
+            --clobber
 
   build-mobile:
     if: github.event_name != 'workflow_dispatch' || inputs.platform == 'all' || inputs.platform == 'android' || inputs.platform == 'ios'
@@ -104,4 +118,39 @@ jobs:
 
       - name: Trigger EAS build
         if: github.event_name != 'workflow_dispatch' || inputs.platform == 'all' || inputs.platform == matrix.platform
-        run: eas build --platform ${{ matrix.platform }} --profile $BUILD_PROFILE --non-interactive --wait
+        run: eas build --platform ${{ matrix.platform }} --profile $BUILD_PROFILE --non-interactive --wait --json > build.json
+
+      - name: Download mobile artifact
+        if: (github.event_name != 'workflow_dispatch' || inputs.platform == 'all' || inputs.platform == matrix.platform) && startsWith(github.ref, 'refs/tags/v')
+        shell: bash
+        run: |
+          BUILD_ID=$(node -e "const fs=require('fs'); const data=JSON.parse(fs.readFileSync('build.json','utf8')); const item=Array.isArray(data)?data[0]:data; console.log(item.id)")
+          eas build:view "$BUILD_ID" --json > build-view.json
+
+          ARTIFACT_URL=$(node -e "const fs=require('fs'); const data=JSON.parse(fs.readFileSync('build-view.json','utf8')); console.log(data?.artifacts?.buildUrl || data?.artifacts?.applicationArchiveUrl || '')")
+
+          if [ -z "$ARTIFACT_URL" ]; then
+            echo "No artifact URL found"
+            cat build-view.json
+            exit 1
+          fi
+
+          if [ "${{ matrix.platform }}" = "android" ]; then
+            EXT="apk"
+          else
+            EXT="ipa"
+          fi
+
+          FILE_NAME="cfblog-${{ matrix.platform }}-${{ github.ref_name }}.${EXT}"
+          curl -L "$ARTIFACT_URL" -o "$FILE_NAME"
+          echo "artifact_name=$FILE_NAME" >> "$GITHUB_OUTPUT"
+        id: mobile_artifact
+
+      - name: Upload mobile artifact to release
+        if: (github.event_name != 'workflow_dispatch' || inputs.platform == 'all' || inputs.platform == matrix.platform) && startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release upload "${{ github.ref_name }}" \
+            "${{ steps.mobile_artifact.outputs.artifact_name }}" \
+            --clobber
