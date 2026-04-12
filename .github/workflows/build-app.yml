@@ -104,4 +104,4 @@ jobs:
 
       - name: Trigger EAS build
         if: github.event_name != 'workflow_dispatch' || inputs.platform == 'all' || inputs.platform == matrix.platform
-        run: npx eas-cli build --platform ${{ matrix.platform }} --profile $BUILD_PROFILE --non-interactive --wait
+        run: eas build --platform ${{ matrix.platform }} --profile $BUILD_PROFILE --non-interactive --wait

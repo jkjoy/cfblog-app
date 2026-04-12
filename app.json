@@ -2,6 +2,7 @@
   "expo": {
     "name": "CFBlog Mobile",
     "slug": "cfblog-mobile",
+    "owner": "jkjoy",
     "version": "1.0.0",
     "orientation": "default",
     "platforms": [
@@ -20,6 +21,11 @@
     "android": {
       "package": "com.cfblog.mobile",
       "versionCode": 1
+    },
+    "extra": {
+      "eas": {
+        "projectId": "915ee6b0-788f-495b-b9a2-4bc77311de4f"
+      }
     },
     "web": {
       "bundler": "metro"
