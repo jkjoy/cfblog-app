@@ -1,0 +1,28 @@
+{
+  "expo": {
+    "name": "CFBlog Mobile",
+    "slug": "cfblog-mobile",
+    "version": "1.0.0",
+    "orientation": "default",
+    "platforms": [
+      "ios",
+      "android",
+      "web"
+    ],
+    "userInterfaceStyle": "light",
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "bundleIdentifier": "com.cfblog.mobile",
+      "buildNumber": "1.0.0"
+    },
+    "android": {
+      "package": "com.cfblog.mobile",
+      "versionCode": 1
+    },
+    "web": {
+      "bundler": "metro"
+    }
+  }
+}

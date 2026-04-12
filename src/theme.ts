@@ -1,0 +1,17 @@
+export const palette = {
+  shell: '#183D35',
+  shellSoft: '#295B4E',
+  background: '#F3ECE2',
+  surface: '#FFF9F2',
+  surfaceAlt: '#F7EFE5',
+  border: '#D9CCBC',
+  text: '#21312C',
+  muted: '#667C75',
+  accent: '#C7682D',
+  accentSoft: '#F4D4C0',
+  success: '#2F7A59',
+  warning: '#B7791F',
+  danger: '#A33B3B',
+  white: '#FFFFFF',
+  overlay: 'rgba(17, 25, 23, 0.48)',
+};

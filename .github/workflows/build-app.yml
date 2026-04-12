@@ -1,0 +1,107 @@
+name: Build App
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: Build target
+        required: true
+        default: all
+        type: choice
+        options:
+          - all
+          - android
+          - ios
+          - web
+      profile:
+        description: EAS build profile
+        required: true
+        default: preview
+        type: choice
+        options:
+          - preview
+          - production
+
+permissions:
+  contents: read
+
+jobs:
+  build-web:
+    if: github.event_name != 'workflow_dispatch' || inputs.platform == 'all' || inputs.platform == 'web'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type check
+        run: npm run typecheck
+
+      - name: Build web
+        run: npm run build:web
+
+      - name: Upload web artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-dist
+          path: dist
+
+  build-mobile:
+    if: github.event_name != 'workflow_dispatch' || inputs.platform == 'all' || inputs.platform == 'android' || inputs.platform == 'ios'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        platform:
+          - android
+          - ios
+
+    env:
+      BUILD_PROFILE: ${{ github.event_name == 'workflow_dispatch' && inputs.profile || 'preview' }}
+
+    steps:
+      - name: Skip unmatched matrix target
+        if: github.event_name == 'workflow_dispatch' && inputs.platform != 'all' && inputs.platform != matrix.platform
+        run: echo "Skip ${{ matrix.platform }}"
+
+      - name: Checkout
+        if: github.event_name != 'workflow_dispatch' || inputs.platform == 'all' || inputs.platform == matrix.platform
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        if: github.event_name != 'workflow_dispatch' || inputs.platform == 'all' || inputs.platform == matrix.platform
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        if: github.event_name != 'workflow_dispatch' || inputs.platform == 'all' || inputs.platform == matrix.platform
+        run: npm ci
+
+      - name: Type check
+        if: github.event_name != 'workflow_dispatch' || inputs.platform == 'all' || inputs.platform == matrix.platform
+        run: npm run typecheck
+
+      - name: Setup Expo and EAS
+        if: github.event_name != 'workflow_dispatch' || inputs.platform == 'all' || inputs.platform == matrix.platform
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Trigger EAS build
+        if: github.event_name != 'workflow_dispatch' || inputs.platform == 'all' || inputs.platform == matrix.platform
+        run: npx eas-cli build --platform ${{ matrix.platform }} --profile $BUILD_PROFILE --non-interactive --wait
