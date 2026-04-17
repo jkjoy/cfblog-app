@@ -1,0 +1,342 @@
+import 'package:flutter/material.dart';
+
+import '../../core/cfblog_api.dart';
+import '../../core/formatters.dart';
+import '../../core/models.dart';
+import '../../theme/app_theme.dart';
+import '../../widgets/app_chrome.dart';
+import 'page_editor_screen.dart';
+
+class PagesScreen extends StatefulWidget {
+  const PagesScreen({super.key, required this.api});
+
+  final CfblogApi api;
+
+  @override
+  State<PagesScreen> createState() => _PagesScreenState();
+}
+
+class _PagesScreenState extends State<PagesScreen> {
+  bool _loading = true;
+  String? _message;
+  bool _isError = false;
+  List<WpPost> _items = const [];
+  int _page = 1;
+  int _total = 0;
+  int _totalPages = 1;
+  String _status = 'all';
+
+  static const _statusOptions = <String>[
+    'all',
+    'publish',
+    'draft',
+    'pending',
+    'private',
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPages();
+  }
+
+  Future<void> _loadPages() async {
+    setState(() {
+      _loading = true;
+      _message = null;
+    });
+    try {
+      final result = await widget.api.listPages(
+        page: _page,
+        perPage: 12,
+        status: _status,
+      );
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _items = result.items;
+        _total = result.total;
+        _totalPages = result.totalPages;
+        _isError = false;
+      });
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _isError = true;
+        _message = error.toString().replaceFirst('Exception: ', '');
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _loading = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _openEditor({int? pageId}) async {
+    final changed = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (context) => PageEditorScreen(api: widget.api, pageId: pageId),
+      ),
+    );
+
+    if (changed == true && mounted) {
+      final messenger = ScaffoldMessenger.of(context);
+      await _loadPages();
+      messenger.showSnackBar(
+        SnackBar(content: Text(pageId == null ? '页面已创建' : '页面已更新')),
+      );
+    }
+  }
+
+  Future<void> _delete(WpPost page) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('删除页面'),
+        content: Text('确定要删除「${stripHtml(page.title)}」吗？'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('取消'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('删除'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) {
+      return;
+    }
+
+    try {
+      await widget.api.deletePage(page.id);
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _isError = false;
+        _message = '页面已删除';
+      });
+      await _loadPages();
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _isError = true;
+        _message = error.toString().replaceFirst('Exception: ', '');
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return RefreshIndicator(
+      onRefresh: _loadPages,
+      child: ListView(
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+        children: [
+          SurfaceCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SectionHeading(
+                  title: '页面管理',
+                  subtitle: '维护 About、归档和说明类页面，偏结构化而不是频繁更新。',
+                  trailing: Wrap(
+                    spacing: 12,
+                    runSpacing: 12,
+                    children: [
+                      FilledButton.tonalIcon(
+                        onPressed: _loadPages,
+                        icon: const Icon(Icons.refresh_rounded),
+                        label: const Text('刷新'),
+                      ),
+                      FilledButton.icon(
+                        onPressed: () => _openEditor(),
+                        icon: const Icon(Icons.note_add_rounded),
+                        label: const Text('新建页面'),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 18),
+                SelectionChipBar<String>(
+                  items: _statusOptions,
+                  value: _status,
+                  labelBuilder: (status) =>
+                      status == 'all' ? '全部' : statusLabel(status),
+                  onSelected: (status) {
+                    setState(() {
+                      _status = status;
+                      _page = 1;
+                    });
+                    _loadPages();
+                  },
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  '当前共 $_total 页，第 $_page / $_totalPages 页',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.copyWith(color: AppTheme.textMuted),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          if (_message != null) ...[
+            InfoBanner(message: _message!, isError: _isError),
+            const SizedBox(height: 16),
+          ],
+          if (_loading)
+            const BootPanel(title: '正在加载页面', subtitle: '同步远程页面列表和当前筛选状态。')
+          else if (_items.isEmpty)
+            const EmptyStateCard(
+              title: '当前没有页面',
+              subtitle: '可以新建一个说明页、友链页或归档页。',
+            )
+          else
+            ..._items.map(
+              (page) => Padding(
+                padding: const EdgeInsets.only(bottom: 14),
+                child: _PageCard(
+                  page: page,
+                  onEdit: () => _openEditor(pageId: page.id),
+                  onDelete: () => _delete(page),
+                ),
+              ),
+            ),
+          const SizedBox(height: 4),
+          PaginationCard(
+            currentPage: _page,
+            totalPages: _totalPages,
+            onPrevious: () {
+              setState(() {
+                _page -= 1;
+              });
+              _loadPages();
+            },
+            onNext: () {
+              setState(() {
+                _page += 1;
+              });
+              _loadPages();
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PageCard extends StatelessWidget {
+  const _PageCard({
+    required this.page,
+    required this.onEdit,
+    required this.onDelete,
+  });
+
+  final WpPost page;
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
+
+  @override
+  Widget build(BuildContext context) {
+    return SurfaceCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            children: [
+              _PageBadge(label: statusLabel(page.status)),
+              _PageBadge(
+                label: page.commentStatus == 'closed' ? '评论关闭' : '评论开放',
+              ),
+              if (page.parent > 0) _PageBadge(label: '父级 ${page.parent}'),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Text(
+            stripHtml(page.title).isEmpty ? '未命名页面' : stripHtml(page.title),
+            style: Theme.of(context).textTheme.titleLarge,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            stripHtml(page.excerpt).isEmpty
+                ? '这个页面还没有摘要。'
+                : stripHtml(page.excerpt),
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(color: AppTheme.textMuted),
+          ),
+          const SizedBox(height: 16),
+          Wrap(
+            spacing: 12,
+            runSpacing: 12,
+            children: [
+              Text(
+                '/${page.slug}',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+              Text(
+                formatDate(page.modified.isEmpty ? page.date : page.modified),
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            children: [
+              OutlinedButton.icon(
+                onPressed: onEdit,
+                icon: const Icon(Icons.edit_rounded),
+                label: const Text('编辑'),
+              ),
+              FilledButton.tonalIcon(
+                onPressed: onDelete,
+                icon: const Icon(Icons.delete_outline_rounded),
+                label: const Text('删除'),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PageBadge extends StatelessWidget {
+  const _PageBadge({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: AppTheme.surfaceMuted,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        label,
+        style: Theme.of(
+          context,
+        ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w700),
+      ),
+    );
+  }
+}

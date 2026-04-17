@@ -1,78 +1,56 @@
-# CFBlog Mobile App
+# CFBlog Flutter Admin
 
-基于 Expo + React Native Web 的跨平台移动客户端，面向现有 `cfblog` 后端，覆盖：
+This repository now uses Flutter as the primary application codebase.
 
-- iOS
-- Android
-- Web
+The current app is a Flutter rebuild of the original CFBlog admin client, with a refreshed UI and responsive admin workflows for dashboard, posts, pages, media, comments, taxonomies, links, moments, users, and settings.
 
-## 目标能力
+## Project Layout
 
-- 登录、注册、会话保持
-- 文章、页面、动态的创建/编辑/发布
-- 评论与动态评论管理
-- 媒体上传与元数据维护
-- 分类、标签、友链、友链分类管理
-- 用户与站点设置管理
-- 适合日常更新的移动端快捷入口
+- `lib/`: Flutter application source
+- `test/`: widget and screen tests
+- `web/`, `android/`, `ios/`: Flutter platform targets
+- `legacy_expo/`: archived Expo/React Native implementation kept for reference
 
-## 启动
+## Requirements
 
-```bash
-npm install
-npm run web
-```
+- Flutter SDK 3.10+
+- Dart SDK 3.10+
 
-或：
+## Local Development
 
 ```bash
-npm run android
-npm run ios
+flutter pub get
+flutter analyze
+flutter test
+flutter run -d chrome
 ```
 
-## 自动打包
+Run on a connected device or emulator:
 
-仓库已包含 GitHub Actions 自动打包工作流：
-
-- [build-app.yml](\.github\workflows\build-app.yml)
-- [release.yml](\.github\workflows\release.yml)
-
-触发方式：
-
-- 推送 `v*` tag 时自动打包
-- 在 GitHub Actions 里手动触发，选择 `android / ios / web / all`
-
-打包策略：
-
-- `web`：执行 `npm run build:web`，并上传 `dist` 为构建产物
-- `android / ios`：通过 EAS Build 云端打包
-
-打包前你需要准备：
-
-- GitHub Secret: `EXPO_TOKEN`
-- Expo / EAS 项目已初始化
-- 建议在 `app.json` 中补全 `android.package` 和 `ios.bundleIdentifier`
-
-EAS 构建配置见：
-
-- [eas.json](C:\Users\Administrator\Desktop\新建文件夹\cfblog-app\eas.json)
-
-## 连接后端
-
-应用首次打开时填写你的 CFBlog 站点地址，例如：
-
-```text
-https://your-domain.com
+```bash
+flutter run
 ```
 
-客户端会自动请求：
+## Build
 
-```text
-https://your-domain.com/wp-json/
-https://your-domain.com/wp-json/wp/v2/*
+Web:
+
+```bash
+flutter build web --release
 ```
 
-## 说明
+Android:
 
-- 默认面向后台更新操作，而不是博客前台阅读器。
-- 如果当前账号不是管理员，设置、用户等模块会受后端权限控制。
+```bash
+flutter build apk --release
+```
+
+iOS:
+
+```bash
+flutter build ios --release --no-codesign
+```
+
+## Legacy Expo App
+
+The previous Expo/React Native project has been archived under `legacy_expo/`. It is no longer the primary app target, but the code remains available as a migration reference.

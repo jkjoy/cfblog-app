@@ -19,23 +19,12 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Type check
-        run: npm run typecheck
-
-      - name: Read version
+      - name: Read version from pubspec
         id: version
         shell: bash
         run: |
-          VERSION="$(node -p "require('./package.json').version")"
+          VERSION_LINE="$(grep '^version:' pubspec.yaml | head -n 1 | awk '{print $2}')"
+          VERSION="${VERSION_LINE%%+*}"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "tag=v$VERSION" >> "$GITHUB_OUTPUT"
 
@@ -57,9 +46,7 @@ jobs:
 
       - name: Stop if release already exists
         if: steps.tag_check.outputs.exists == 'true'
-        shell: bash
-        run: |
-          echo "Tag ${{ steps.version.outputs.tag }} already exists. Skip release."
+        run: echo "Tag ${{ steps.version.outputs.tag }} already exists. Skip release."
 
       - name: Create tag
         if: steps.tag_check.outputs.exists != 'true'

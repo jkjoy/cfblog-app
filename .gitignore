@@ -1,9 +1,42 @@
-node_modules
-.expo
-.expo-shared
-dist
-web-build
+# OS / editor
+.DS_Store
+Thumbs.db
+*.log
+*.swp
+*.tmp
+.idea/
+.vscode/
+*.iml
+flutter_app
+# Flutter / Dart
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub/
+.pub-cache/
+build/
+coverage/
+**/doc/api/
+**/ios/Flutter/.last_build_id
+
+# Android / iOS build outputs
+android/.gradle/
+android/app/debug/
+android/app/profile/
+android/app/release/
+ios/Pods/
+ios/.symlinks/
+ios/Flutter/ephemeral/
+ios/Flutter/Generated.xcconfig
+ios/Flutter/flutter_export_environment.sh
+
+# Legacy Expo archive
+legacy_expo/node_modules/
+legacy_expo/.expo/
+legacy_expo/.expo-shared/
+legacy_expo/dist/
+legacy_expo/web-build/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-.DS_Store
