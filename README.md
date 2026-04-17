@@ -13,8 +13,8 @@ The current app is a Flutter rebuild of the original CFBlog admin client, with a
 
 ## Requirements
 
-- Flutter SDK 3.10+
-- Dart SDK 3.10+
+- Flutter SDK 3.38.3+
+- Dart SDK 3.10.1+
 
 ## Local Development
 
