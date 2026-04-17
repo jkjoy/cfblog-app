@@ -83,21 +83,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          widget.discovery?.name.isEmpty ?? true
-                              ? '内容运营指挥台'
-                              : widget.discovery!.name,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: (compact
-                                  ? Theme.of(context).textTheme.titleLarge
-                                  : Theme.of(context).textTheme.headlineMedium)
-                              ?.copyWith(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w800,
-                              ),
-                        ),
-                        SizedBox(height: compact ? 10 : 14),
-                        Text(
                           '工作区入口',
                           style: (compact
                                   ? Theme.of(context).textTheme.titleSmall
@@ -205,14 +190,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        SectionHeading(
-                          title: '核心指标',
-                          subtitle: compact ? '' : '保持高频内容和反馈面板在同一屏内可读。',
-                          trailing: OutlinedButton.icon(
-                            onPressed: _reload,
-                            icon: const Icon(Icons.refresh_rounded),
-                            label: const Text('刷新'),
-                          ),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Expanded(
+                              child: Text(
+                                '核心指标',
+                                style: (compact
+                                        ? Theme.of(context).textTheme.titleLarge
+                                        : Theme.of(context).textTheme.headlineSmall)
+                                    ?.copyWith(fontWeight: FontWeight.w800),
+                              ),
+                            ),
+                            OutlinedButton.icon(
+                              onPressed: _reload,
+                              icon: const Icon(Icons.refresh_rounded),
+                              label: const Text('刷新'),
+                            ),
+                          ],
                         ),
                         SizedBox(height: compact ? 12 : 18),
                         Wrap(
