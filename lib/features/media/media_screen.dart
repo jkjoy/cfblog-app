@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/cfblog_api.dart';
 import '../../core/formatters.dart';
+import '../../core/media_upload.dart';
 import '../../core/models.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/app_chrome.dart';
@@ -114,10 +115,15 @@ class _MediaScreenState extends State<MediaScreen> {
     });
 
     try {
+      final mimeType = detectUploadMimeType(
+        fileName: file.name,
+        bytes: file.bytes,
+      );
       await widget.api.uploadMedia(
         fileName: file.name,
         filePath: file.path,
         bytes: file.bytes,
+        mimeType: mimeType,
         fields: {
           'title': _titleController.text.trim().isEmpty
               ? file.name

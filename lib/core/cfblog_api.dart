@@ -2,8 +2,10 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 
 import 'formatters.dart';
+import 'media_upload.dart';
 import 'models.dart';
 
 enum ApiRoot { root, v2 }
@@ -536,6 +538,7 @@ class CfblogApi {
     required Map<String, String> fields,
     String? filePath,
     Uint8List? bytes,
+    String? mimeType,
   }) async {
     final request = http.MultipartRequest('POST', _buildUri('/media'))
       ..headers['accept'] = 'application/json';
@@ -545,14 +548,27 @@ class CfblogApi {
     }
 
     request.fields.addAll(fields);
+    final resolvedMimeType =
+        mimeType ?? detectUploadMimeType(fileName: fileName, bytes: bytes);
+    final mediaType = _parseMediaType(resolvedMimeType);
 
     if (bytes != null) {
       request.files.add(
-        http.MultipartFile.fromBytes('file', bytes, filename: fileName),
+        http.MultipartFile.fromBytes(
+          'file',
+          bytes,
+          filename: fileName,
+          contentType: mediaType,
+        ),
       );
     } else if (filePath != null && filePath.isNotEmpty) {
       request.files.add(
-        await http.MultipartFile.fromPath('file', filePath, filename: fileName),
+        await http.MultipartFile.fromPath(
+          'file',
+          filePath,
+          filename: fileName,
+          contentType: mediaType,
+        ),
       );
     } else {
       throw Exception('未找到可上传的文件内容');
@@ -580,6 +596,18 @@ class CfblogApi {
     }
 
     return WpMedia.fromJson(_asMap(payload));
+  }
+
+  MediaType? _parseMediaType(String? mimeType) {
+    if (mimeType == null || mimeType.trim().isEmpty) {
+      return null;
+    }
+
+    try {
+      return MediaType.parse(mimeType);
+    } catch (_) {
+      return null;
+    }
   }
 
   Future<PagedResponse<WpMoment>> listMoments({
