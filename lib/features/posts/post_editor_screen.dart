@@ -186,6 +186,7 @@ class _PostEditorScreenState extends State<PostEditorScreen> {
   @override
   Widget build(BuildContext context) {
     final title = widget.isEditing ? '编辑文章' : '新建文章';
+    final compact = isCompactLayout(context);
 
     return AppBackdrop(
       child: Scaffold(
@@ -197,7 +198,7 @@ class _PostEditorScreenState extends State<PostEditorScreen> {
           elevation: 0,
           actions: [
             Padding(
-              padding: const EdgeInsets.only(right: 16),
+              padding: EdgeInsets.only(right: compact ? 12 : 16),
               child: FilledButton.icon(
                 onPressed: _saving ? null : _save,
                 icon: _saving
@@ -227,7 +228,11 @@ class _PostEditorScreenState extends State<PostEditorScreen> {
               : RefreshIndicator(
                   onRefresh: _bootstrap,
                   child: ListView(
-                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                    padding: pageContentPadding(
+                      context,
+                      top: compact ? 4 : 8,
+                      bottom: compact ? 18 : 24,
+                    ),
                     children: [
                       SurfaceCard(
                         child: Column(
@@ -239,12 +244,18 @@ class _PostEditorScreenState extends State<PostEditorScreen> {
                                   ? '在同一页处理标题、摘要、正文和发布状态，减少来回切换。'
                                   : '先写核心内容，再逐步补充分类、标签和封面信息。',
                             ),
-                            const SizedBox(height: 18),
+                            SizedBox(height: compact ? 12 : 18),
                             Wrap(
-                              spacing: 10,
-                              runSpacing: 10,
+                              spacing: compact ? 8 : 10,
+                              runSpacing: compact ? 8 : 10,
                               children: _postStatusOptions.map((status) {
                                 return ChoiceChip(
+                                  visualDensity: compact
+                                      ? VisualDensity.compact
+                                      : VisualDensity.standard,
+                                  materialTapTargetSize: compact
+                                      ? MaterialTapTargetSize.shrinkWrap
+                                      : MaterialTapTargetSize.padded,
                                   label: Text(statusLabel(status)),
                                   selected: _status == status,
                                   onSelected: (_) {
@@ -255,12 +266,14 @@ class _PostEditorScreenState extends State<PostEditorScreen> {
                                 );
                               }).toList(),
                             ),
-                            const SizedBox(height: 18),
+                            SizedBox(height: compact ? 12 : 18),
                             Container(
-                              padding: const EdgeInsets.all(16),
+                              padding: EdgeInsets.all(compact ? 12 : 16),
                               decoration: BoxDecoration(
                                 color: AppTheme.surfaceMuted,
-                                borderRadius: BorderRadius.circular(22),
+                                borderRadius: BorderRadius.circular(
+                                  compact ? 18 : 22,
+                                ),
                                 border: Border.all(color: AppTheme.border),
                               ),
                               child: Row(
@@ -274,14 +287,20 @@ class _PostEditorScreenState extends State<PostEditorScreen> {
                                           '置顶文章',
                                           style: Theme.of(
                                             context,
-                                          ).textTheme.titleMedium,
+                                          ).textTheme.titleSmall?.copyWith(
+                                                fontWeight: FontWeight.w800,
+                                              ),
                                         ),
-                                        const SizedBox(height: 6),
+                                        SizedBox(height: compact ? 4 : 6),
                                         Text(
                                           '打开后会优先展示在前台内容流中，适合公告或重点文章。',
                                           style: Theme.of(
                                             context,
                                           ).textTheme.bodySmall,
+                                          maxLines: compact ? 2 : null,
+                                          overflow: compact
+                                              ? TextOverflow.ellipsis
+                                              : null,
                                         ),
                                       ],
                                     ),
@@ -300,10 +319,10 @@ class _PostEditorScreenState extends State<PostEditorScreen> {
                           ],
                         ),
                       ),
-                      const SizedBox(height: 16),
+                      SizedBox(height: compact ? 12 : 16),
                       if (_error != null) ...[
                         InfoBanner(message: _error!, isError: true),
-                        const SizedBox(height: 16),
+                        SizedBox(height: compact ? 12 : 16),
                       ],
                       Form(
                         key: _formKey,
@@ -317,7 +336,7 @@ class _PostEditorScreenState extends State<PostEditorScreen> {
                                     title: '内容主区',
                                     subtitle: '先把标题、摘要和正文写完整，这部分决定文章质量。',
                                   ),
-                                  const SizedBox(height: 18),
+                                  SizedBox(height: compact ? 12 : 18),
                                   TextFormField(
                                     controller: _titleController,
                                     decoration: const InputDecoration(
@@ -330,21 +349,21 @@ class _PostEditorScreenState extends State<PostEditorScreen> {
                                       return null;
                                     },
                                   ),
-                                  const SizedBox(height: 14),
+                                  SizedBox(height: compact ? 10 : 14),
                                   TextFormField(
                                     controller: _excerptController,
-                                    minLines: 3,
-                                    maxLines: 5,
+                                    minLines: compact ? 2 : 3,
+                                    maxLines: compact ? 4 : 5,
                                     decoration: const InputDecoration(
                                       labelText: '摘要',
                                       hintText: '用于列表摘要、SEO 简述或卡片预览。',
                                     ),
                                   ),
-                                  const SizedBox(height: 14),
+                                  SizedBox(height: compact ? 10 : 14),
                                   TextFormField(
                                     controller: _contentController,
-                                    minLines: 12,
-                                    maxLines: 20,
+                                    minLines: compact ? 8 : 12,
+                                    maxLines: compact ? 14 : 20,
                                     decoration: const InputDecoration(
                                       labelText: '正文',
                                       hintText: '支持直接填写原始正文内容。',
@@ -360,7 +379,7 @@ class _PostEditorScreenState extends State<PostEditorScreen> {
                                 ],
                               ),
                             ),
-                            const SizedBox(height: 16),
+                            SizedBox(height: compact ? 12 : 16),
                             SurfaceCard(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -369,7 +388,7 @@ class _PostEditorScreenState extends State<PostEditorScreen> {
                                     title: '结构与发布',
                                     subtitle: '这部分影响链接结构、发布时间和封面展示。',
                                   ),
-                                  const SizedBox(height: 18),
+                                  SizedBox(height: compact ? 12 : 18),
                                   LayoutBuilder(
                                     builder: (context, constraints) {
                                       final stacked =
@@ -394,7 +413,9 @@ class _PostEditorScreenState extends State<PostEditorScreen> {
                                               CrossAxisAlignment.start,
                                           children: [
                                             slugField,
-                                            const SizedBox(height: 12),
+                                            SizedBox(
+                                              height: compact ? 10 : 12,
+                                            ),
                                             dateField,
                                           ],
                                         );
@@ -405,13 +426,13 @@ class _PostEditorScreenState extends State<PostEditorScreen> {
                                             CrossAxisAlignment.start,
                                         children: [
                                           Expanded(child: slugField),
-                                          const SizedBox(width: 12),
+                                          SizedBox(width: compact ? 8 : 12),
                                           Expanded(child: dateField),
                                         ],
                                       );
                                     },
                                   ),
-                                  const SizedBox(height: 14),
+                                  SizedBox(height: compact ? 10 : 14),
                                   LayoutBuilder(
                                     builder: (context, constraints) {
                                       final stacked =
@@ -437,7 +458,9 @@ class _PostEditorScreenState extends State<PostEditorScreen> {
                                               CrossAxisAlignment.start,
                                           children: [
                                             mediaField,
-                                            const SizedBox(height: 12),
+                                            SizedBox(
+                                              height: compact ? 10 : 12,
+                                            ),
                                             imageUrlField,
                                           ],
                                         );
@@ -448,7 +471,7 @@ class _PostEditorScreenState extends State<PostEditorScreen> {
                                             CrossAxisAlignment.start,
                                         children: [
                                           Expanded(child: mediaField),
-                                          const SizedBox(width: 12),
+                                          SizedBox(width: compact ? 8 : 12),
                                           Expanded(child: imageUrlField),
                                         ],
                                       );
@@ -457,7 +480,7 @@ class _PostEditorScreenState extends State<PostEditorScreen> {
                                 ],
                               ),
                             ),
-                            const SizedBox(height: 16),
+                            SizedBox(height: compact ? 12 : 16),
                             SurfaceCard(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -466,7 +489,7 @@ class _PostEditorScreenState extends State<PostEditorScreen> {
                                     title: '分类与标签',
                                     subtitle: '用多选芯片处理引用数据，比传统下拉更适合移动端。',
                                   ),
-                                  const SizedBox(height: 18),
+                                  SizedBox(height: compact ? 12 : 18),
                                   _TermSelector(
                                     title: '分类',
                                     emptyText: '当前没有分类可选。',
@@ -477,7 +500,7 @@ class _PostEditorScreenState extends State<PostEditorScreen> {
                                       id,
                                     ),
                                   ),
-                                  const SizedBox(height: 18),
+                                  SizedBox(height: compact ? 12 : 18),
                                   _TermSelector(
                                     title: '标签',
                                     emptyText: '当前没有标签可选。',
@@ -489,7 +512,7 @@ class _PostEditorScreenState extends State<PostEditorScreen> {
                                 ],
                               ),
                             ),
-                            const SizedBox(height: 16),
+                            SizedBox(height: compact ? 12 : 16),
                             SurfaceCard(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -498,10 +521,10 @@ class _PostEditorScreenState extends State<PostEditorScreen> {
                                     title: '保存前检查',
                                     subtitle: '确保状态、摘要和正文都已经准备好，再提交到远端。',
                                   ),
-                                  const SizedBox(height: 18),
+                                  SizedBox(height: compact ? 12 : 18),
                                   Wrap(
-                                    spacing: 10,
-                                    runSpacing: 10,
+                                    spacing: compact ? 8 : 10,
+                                    runSpacing: compact ? 8 : 10,
                                     children: [
                                       _ReviewPill(
                                         icon: Icons.article_outlined,
@@ -566,19 +589,31 @@ class _TermSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final compact = isCompactLayout(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(title, style: Theme.of(context).textTheme.titleMedium),
-        const SizedBox(height: 10),
+        Text(
+          title,
+          style: Theme.of(
+            context,
+          ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
+        ),
+        SizedBox(height: compact ? 8 : 10),
         if (items.isEmpty)
           Text(emptyText, style: Theme.of(context).textTheme.bodySmall)
         else
           Wrap(
-            spacing: 10,
-            runSpacing: 10,
+            spacing: compact ? 8 : 10,
+            runSpacing: compact ? 8 : 10,
             children: items.map((item) {
               return FilterChip(
+                visualDensity: compact
+                    ? VisualDensity.compact
+                    : VisualDensity.standard,
+                materialTapTargetSize: compact
+                    ? MaterialTapTargetSize.shrinkWrap
+                    : MaterialTapTargetSize.padded,
                 label: Text(item.name),
                 selected: selectedIds.contains(item.id),
                 onSelected: (_) => onToggle(item.id),
@@ -598,8 +633,12 @@ class _ReviewPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final compact = isCompactLayout(context);
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      padding: EdgeInsets.symmetric(
+        horizontal: compact ? 10 : 12,
+        vertical: compact ? 8 : 10,
+      ),
       decoration: BoxDecoration(
         color: AppTheme.surfaceMuted,
         borderRadius: BorderRadius.circular(999),
@@ -607,8 +646,8 @@ class _ReviewPill extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 16, color: AppTheme.textMuted),
-          const SizedBox(width: 8),
+          Icon(icon, size: compact ? 14 : 16, color: AppTheme.textMuted),
+          SizedBox(width: compact ? 6 : 8),
           Text(label, style: Theme.of(context).textTheme.bodySmall),
         ],
       ),

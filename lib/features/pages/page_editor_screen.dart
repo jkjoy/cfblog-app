@@ -138,6 +138,7 @@ class _PageEditorScreenState extends State<PageEditorScreen> {
   @override
   Widget build(BuildContext context) {
     final title = widget.isEditing ? '编辑页面' : '新建页面';
+    final compact = isCompactLayout(context);
 
     return AppBackdrop(
       child: Scaffold(
@@ -149,7 +150,7 @@ class _PageEditorScreenState extends State<PageEditorScreen> {
           elevation: 0,
           actions: [
             Padding(
-              padding: const EdgeInsets.only(right: 16),
+              padding: EdgeInsets.only(right: compact ? 12 : 16),
               child: FilledButton.icon(
                 onPressed: _saving ? null : _save,
                 icon: _saving
@@ -177,7 +178,11 @@ class _PageEditorScreenState extends State<PageEditorScreen> {
                   ),
                 )
               : ListView(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                  padding: pageContentPadding(
+                    context,
+                    top: compact ? 4 : 8,
+                    bottom: compact ? 18 : 24,
+                  ),
                   children: [
                     SurfaceCard(
                       child: Column(
@@ -187,16 +192,22 @@ class _PageEditorScreenState extends State<PageEditorScreen> {
                             title: title,
                             subtitle: '固定页面更强调结构清晰和长期可维护性，先处理层级和评论开关。',
                           ),
-                          const SizedBox(height: 18),
+                          SizedBox(height: compact ? 12 : 18),
                           if (_error != null) ...[
                             InfoBanner(message: _error!, isError: true),
-                            const SizedBox(height: 16),
+                            SizedBox(height: compact ? 12 : 16),
                           ],
                           Wrap(
-                            spacing: 10,
-                            runSpacing: 10,
+                            spacing: compact ? 8 : 10,
+                            runSpacing: compact ? 8 : 10,
                             children: _pageStatusOptions.map((status) {
                               return ChoiceChip(
+                                visualDensity: compact
+                                    ? VisualDensity.compact
+                                    : VisualDensity.standard,
+                                materialTapTargetSize: compact
+                                    ? MaterialTapTargetSize.shrinkWrap
+                                    : MaterialTapTargetSize.padded,
                                 label: Text(statusLabel(status)),
                                 selected: _status == status,
                                 onSelected: (_) {
@@ -207,7 +218,7 @@ class _PageEditorScreenState extends State<PageEditorScreen> {
                               );
                             }).toList(),
                           ),
-                          const SizedBox(height: 18),
+                          SizedBox(height: compact ? 12 : 18),
                           LayoutBuilder(
                             builder: (context, constraints) {
                               final stacked = constraints.maxWidth < 720;
@@ -229,7 +240,7 @@ class _PageEditorScreenState extends State<PageEditorScreen> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     titleField,
-                                    const SizedBox(height: 12),
+                                    SizedBox(height: compact ? 10 : 12),
                                     slugField,
                                   ],
                                 );
@@ -239,13 +250,13 @@ class _PageEditorScreenState extends State<PageEditorScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Expanded(child: titleField),
-                                  const SizedBox(width: 12),
+                                  SizedBox(width: compact ? 8 : 12),
                                   Expanded(child: slugField),
                                 ],
                               );
                             },
                           ),
-                          const SizedBox(height: 14),
+                          SizedBox(height: compact ? 10 : 14),
                           LayoutBuilder(
                             builder: (context, constraints) {
                               final stacked = constraints.maxWidth < 720;
@@ -287,7 +298,7 @@ class _PageEditorScreenState extends State<PageEditorScreen> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     parentField,
-                                    const SizedBox(height: 12),
+                                    SizedBox(height: compact ? 10 : 12),
                                     commentStatusField,
                                   ],
                                 );
@@ -297,27 +308,27 @@ class _PageEditorScreenState extends State<PageEditorScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Expanded(child: parentField),
-                                  const SizedBox(width: 12),
+                                  SizedBox(width: compact ? 8 : 12),
                                   Expanded(child: commentStatusField),
                                 ],
                               );
                             },
                           ),
-                          const SizedBox(height: 14),
+                          SizedBox(height: compact ? 10 : 14),
                           TextField(
                             controller: _excerptController,
-                            minLines: 3,
-                            maxLines: 5,
+                            minLines: compact ? 2 : 3,
+                            maxLines: compact ? 4 : 5,
                             decoration: const InputDecoration(
                               labelText: '摘要',
                               hintText: '适合 About、归档和说明性页面的简短导语。',
                             ),
                           ),
-                          const SizedBox(height: 14),
+                          SizedBox(height: compact ? 10 : 14),
                           TextField(
                             controller: _contentController,
-                            minLines: 12,
-                            maxLines: 20,
+                            minLines: compact ? 8 : 12,
+                            maxLines: compact ? 14 : 20,
                             decoration: const InputDecoration(
                               labelText: '正文',
                               alignLabelWithHint: true,

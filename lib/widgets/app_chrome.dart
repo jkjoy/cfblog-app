@@ -2,6 +2,22 @@ import 'package:flutter/material.dart';
 
 import '../theme/app_theme.dart';
 
+bool isCompactLayout(BuildContext context) => MediaQuery.sizeOf(context).width < 720;
+
+EdgeInsets pageContentPadding(
+  BuildContext context, {
+  double top = 0,
+  double bottom = 20,
+}) {
+  final compact = isCompactLayout(context);
+  return EdgeInsets.fromLTRB(
+    compact ? 12 : 16,
+    top,
+    compact ? 12 : 16,
+    compact ? 14 : bottom,
+  );
+}
+
 class AppBackdrop extends StatelessWidget {
   const AppBackdrop({super.key, required this.child});
 
@@ -77,20 +93,25 @@ class SurfaceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final compact = isCompactLayout(context);
+    final defaultPadding = padding == const EdgeInsets.all(20);
+    final resolvedPadding = defaultPadding
+        ? EdgeInsets.all(compact ? 14 : 20)
+        : padding;
     return DecoratedBox(
       decoration: BoxDecoration(
         color: AppTheme.surface.withValues(alpha: 0.94),
-        borderRadius: BorderRadius.circular(30),
+        borderRadius: BorderRadius.circular(compact ? 22 : 30),
         border: Border.all(color: AppTheme.border),
-        boxShadow: const [
+        boxShadow: [
           BoxShadow(
             color: Color(0x140F1614),
-            blurRadius: 30,
-            offset: Offset(0, 18),
+            blurRadius: compact ? 20 : 30,
+            offset: Offset(0, compact ? 10 : 18),
           ),
         ],
       ),
-      child: Padding(padding: padding, child: child),
+      child: Padding(padding: resolvedPadding, child: child),
     );
   }
 }
@@ -110,25 +131,46 @@ class SectionHeading extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final compact = isCompactLayout(context);
+    final titleBlock = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: compact
+              ? theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800)
+              : theme.textTheme.headlineSmall,
+        ),
+        SizedBox(height: compact ? 4 : 6),
+        Text(
+          subtitle,
+          maxLines: compact ? 2 : null,
+          overflow: compact ? TextOverflow.ellipsis : null,
+          style: (compact ? theme.textTheme.bodySmall : theme.textTheme.bodyMedium)
+              ?.copyWith(color: AppTheme.textMuted),
+        ),
+      ],
+    );
+
+    if (compact && trailing != null) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          titleBlock,
+          const SizedBox(height: 10),
+          trailing!,
+        ],
+      );
+    }
+
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(title, style: theme.textTheme.headlineSmall),
-              const SizedBox(height: 6),
-              Text(
-                subtitle,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: AppTheme.textMuted,
-                ),
-              ),
-            ],
-          ),
-        ),
-        if (trailing case final Widget widget) widget,
+        Expanded(child: titleBlock),
+        if (trailing case final Widget widget) ...[
+          const SizedBox(width: 12),
+          widget,
+        ],
       ],
     );
   }
@@ -151,30 +193,31 @@ class MetricTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final compact = isCompactLayout(context);
     return Container(
-      width: 220,
-      padding: const EdgeInsets.all(18),
+      width: compact ? 172 : 220,
+      padding: EdgeInsets.all(compact ? 14 : 18),
       decoration: BoxDecoration(
         color: AppTheme.surfaceMuted,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(compact ? 18 : 24),
         border: Border.all(color: AppTheme.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            width: 42,
-            height: 42,
+            width: compact ? 36 : 42,
+            height: compact ? 36 : 42,
             decoration: BoxDecoration(
               color: tint.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(compact ? 12 : 14),
             ),
-            child: Icon(icon, color: tint),
+            child: Icon(icon, size: compact ? 18 : 22, color: tint),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: compact ? 10 : 16),
           Text(
             value,
-            style: theme.textTheme.headlineSmall?.copyWith(
+            style: (compact ? theme.textTheme.titleLarge : theme.textTheme.headlineSmall)?.copyWith(
               fontWeight: FontWeight.w700,
             ),
           ),
@@ -199,12 +242,16 @@ class InfoBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final compact = isCompactLayout(context);
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      padding: EdgeInsets.symmetric(
+        horizontal: compact ? 12 : 16,
+        vertical: compact ? 10 : 14,
+      ),
       decoration: BoxDecoration(
         color: isError ? const Color(0xFFF8E8E6) : const Color(0xFFEAF4EE),
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(compact ? 14 : 18),
         border: Border.all(
           color: isError ? const Color(0xFFD8A7A3) : const Color(0xFFB8D0C0),
         ),
@@ -227,15 +274,16 @@ class EmptyStateCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final compact = isCompactLayout(context);
     return SurfaceCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(title, style: theme.textTheme.titleLarge),
-          const SizedBox(height: 8),
+          SizedBox(height: compact ? 6 : 8),
           Text(
             subtitle,
-            style: theme.textTheme.bodyMedium?.copyWith(
+            style: (compact ? theme.textTheme.bodySmall : theme.textTheme.bodyMedium)?.copyWith(
               color: AppTheme.textMuted,
             ),
           ),
@@ -254,6 +302,7 @@ class BootPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final compact = isCompactLayout(context);
     return ConstrainedBox(
       constraints: const BoxConstraints(maxWidth: 440),
       child: SurfaceCard(
@@ -266,12 +315,15 @@ class BootPanel extends StatelessWidget {
               height: 28,
               child: CircularProgressIndicator(strokeWidth: 2.8),
             ),
-            const SizedBox(height: 18),
-            Text(title, style: theme.textTheme.headlineSmall),
-            const SizedBox(height: 8),
+            SizedBox(height: compact ? 12 : 18),
+            Text(
+              title,
+              style: compact ? theme.textTheme.titleLarge : theme.textTheme.headlineSmall,
+            ),
+            SizedBox(height: compact ? 6 : 8),
             Text(
               subtitle,
-              style: theme.textTheme.bodyMedium?.copyWith(
+              style: (compact ? theme.textTheme.bodySmall : theme.textTheme.bodyMedium)?.copyWith(
                 color: AppTheme.textMuted,
               ),
             ),
@@ -300,6 +352,7 @@ class PaginationCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final compact = isCompactLayout(context);
     return SurfaceCard(
       child: Row(
         children: [
@@ -310,7 +363,7 @@ class PaginationCard extends StatelessWidget {
               label: const Text('上一页'),
             ),
           ),
-          const SizedBox(width: 12),
+          SizedBox(width: compact ? 8 : 12),
           Expanded(
             child: FilledButton.icon(
               onPressed: currentPage >= totalPages ? null : onNext,
@@ -340,11 +393,16 @@ class SelectionChipBar<T> extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final compact = isCompactLayout(context);
     return Wrap(
-      spacing: 10,
-      runSpacing: 10,
+      spacing: compact ? 8 : 10,
+      runSpacing: compact ? 8 : 10,
       children: items.map((item) {
         return ChoiceChip(
+          visualDensity: compact ? VisualDensity.compact : VisualDensity.standard,
+          materialTapTargetSize: compact
+              ? MaterialTapTargetSize.shrinkWrap
+              : MaterialTapTargetSize.padded,
           label: Text(labelBuilder(item)),
           selected: item == value,
           onSelected: (_) => onSelected(item),

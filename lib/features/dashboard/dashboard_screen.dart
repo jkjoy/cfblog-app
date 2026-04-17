@@ -59,10 +59,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final compact = isCompactLayout(context);
     return RefreshIndicator(
       onRefresh: _reload,
       child: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+        padding: pageContentPadding(context),
         children: [
           SurfaceCard(
             padding: const EdgeInsets.all(0),
@@ -209,7 +210,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ),
             ),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: compact ? 12 : 16),
           FutureBuilder<DashboardSnapshot>(
             future: _future,
             builder: (context, snapshot) {
@@ -246,10 +247,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             label: const Text('刷新'),
                           ),
                         ),
-                        const SizedBox(height: 18),
+                        SizedBox(height: compact ? 12 : 18),
                         Wrap(
-                          spacing: 12,
-                          runSpacing: 12,
+                          spacing: compact ? 10 : 12,
+                          runSpacing: compact ? 10 : 12,
                           children: [
                             MetricTile(
                               label: '文章',
@@ -292,82 +293,66 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ],
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: compact ? 12 : 16),
                   SurfaceCard(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const SectionHeading(
+                        SectionHeading(
                           title: '工作区入口',
-                          subtitle: '把高频运营动作压缩进一屏，减少在不同模块间来回寻找。',
+                          subtitle: compact ? '' : '把高频运营动作压缩进一屏，减少在不同模块间来回寻找。',
                         ),
-                        const SizedBox(height: 18),
+                        SizedBox(height: compact ? 10 : 18),
                         Wrap(
-                          spacing: 12,
-                          runSpacing: 12,
+                          spacing: compact ? 8 : 12,
+                          runSpacing: compact ? 8 : 12,
                           children: [
                             _WorkspaceLaunchCard(
                               title: '文章',
-                              subtitle: '写作、草稿流转和摘要巡检。',
                               icon: Icons.article_rounded,
                               tint: AppTheme.accent,
-                              actionLabel: '打开文章',
                               onTap: widget.onOpenPosts,
                             ),
                             _WorkspaceLaunchCard(
                               title: '页面',
-                              subtitle: '维护 About、归档和说明页。',
                               icon: Icons.web_rounded,
                               tint: const Color(0xFF21544B),
-                              actionLabel: '打开页面',
                               onTap: widget.onOpenPages,
                             ),
                             _WorkspaceLaunchCard(
                               title: '动态',
-                              subtitle: '快速发布短内容和媒体串联。',
                               icon: Icons.bolt_rounded,
                               tint: AppTheme.warning,
-                              actionLabel: '打开动态',
                               onTap: widget.onOpenMoments,
                             ),
                             _WorkspaceLaunchCard(
                               title: '评论',
-                              subtitle: '审核互动反馈和异常内容。',
                               icon: Icons.forum_rounded,
                               tint: AppTheme.success,
-                              actionLabel: '打开评论',
                               onTap: widget.onOpenComments,
                             ),
                             _WorkspaceLaunchCard(
                               title: '媒体',
-                              subtitle: '整理图片、附件和元信息。',
                               icon: Icons.perm_media_rounded,
                               tint: const Color(0xFF6953B4),
-                              actionLabel: '打开媒体',
                               onTap: widget.onOpenMedia,
                             ),
                             _WorkspaceLaunchCard(
                               title: '分类标签',
-                              subtitle: '整理文章结构和主题维度。',
                               icon: Icons.folder_copy_rounded,
                               tint: const Color(0xFF21544B),
-                              actionLabel: '打开结构',
                               onTap: widget.onOpenTaxonomies,
                             ),
                             _WorkspaceLaunchCard(
                               title: '友链',
-                              subtitle: '维护推荐站点、排序和分组。',
                               icon: Icons.link_rounded,
                               tint: const Color(0xFF7A5A25),
-                              actionLabel: '打开友链',
                               onTap: widget.onOpenLinks,
                             ),
                             _WorkspaceLaunchCard(
                               title: '系统',
-                              subtitle: '管理用户、权限和站点设置。',
                               icon: Icons.tune_rounded,
                               tint: const Color(0xFF6A5168),
-                              actionLabel: '打开系统',
                               onTap: widget.onOpenSystem,
                             ),
                           ],
@@ -375,7 +360,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ],
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: compact ? 12 : 16),
                   SurfaceCard(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -384,7 +369,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           title: '最近文章',
                           subtitle: '用最近更新内容快速判断当前写作节奏、互动量和浏览趋势。',
                         ),
-                        const SizedBox(height: 18),
+                        SizedBox(height: compact ? 12 : 18),
                         if (data.recentPosts.isEmpty)
                           const EmptyStateCard(
                             title: '还没有可展示的文章',
@@ -393,7 +378,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         else
                           ...data.recentPosts.map(
                             (post) => Padding(
-                              padding: const EdgeInsets.only(bottom: 12),
+                              padding: EdgeInsets.only(
+                                bottom: compact ? 10 : 12,
+                              ),
                               child: _PostPreviewCard(post: post),
                             ),
                           ),
@@ -533,58 +520,61 @@ class _MetaPill extends StatelessWidget {
 class _WorkspaceLaunchCard extends StatelessWidget {
   const _WorkspaceLaunchCard({
     required this.title,
-    required this.subtitle,
     required this.icon,
     required this.tint,
-    required this.actionLabel,
     required this.onTap,
   });
 
   final String title;
-  final String subtitle;
   final IconData icon;
   final Color tint;
-  final String actionLabel;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 248,
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: AppTheme.surfaceMuted,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppTheme.border),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 42,
-            height: 42,
-            decoration: BoxDecoration(
-              color: tint.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Icon(icon, color: tint),
+    final compact = isCompactLayout(context);
+    final width = compact ? 104.0 : 132.0;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(compact ? 18 : 22),
+        child: Ink(
+          width: width,
+          padding: EdgeInsets.symmetric(
+            horizontal: compact ? 12 : 14,
+            vertical: compact ? 12 : 14,
           ),
-          const SizedBox(height: 14),
-          Text(title, style: Theme.of(context).textTheme.titleLarge),
-          const SizedBox(height: 8),
-          Text(
-            subtitle,
-            style: Theme.of(
-              context,
-            ).textTheme.bodyMedium?.copyWith(color: AppTheme.textMuted),
+          decoration: BoxDecoration(
+            color: AppTheme.surfaceMuted,
+            borderRadius: BorderRadius.circular(compact ? 18 : 22),
+            border: Border.all(color: AppTheme.border),
           ),
-          const SizedBox(height: 16),
-          OutlinedButton.icon(
-            onPressed: onTap,
-            icon: Icon(icon),
-            label: Text(actionLabel),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: compact ? 34 : 38,
+                height: compact ? 34 : 38,
+                decoration: BoxDecoration(
+                  color: tint.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(compact ? 10 : 12),
+                ),
+                child: Icon(icon, size: compact ? 18 : 20, color: tint),
+              ),
+              SizedBox(height: compact ? 10 : 12),
+              Text(
+                title,
+                maxLines: compact ? 2 : 1,
+                overflow: TextOverflow.ellipsis,
+                style: (compact
+                        ? Theme.of(context).textTheme.titleSmall
+                        : Theme.of(context).textTheme.titleMedium)
+                    ?.copyWith(fontWeight: FontWeight.w800),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }

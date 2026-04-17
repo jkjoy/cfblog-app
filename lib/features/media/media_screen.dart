@@ -230,7 +230,7 @@ class _MediaScreenState extends State<MediaScreen> {
     return RefreshIndicator(
       onRefresh: _loadMedia,
       child: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+        padding: pageContentPadding(context),
         children: [
           SurfaceCard(
             child: Column(
@@ -245,7 +245,7 @@ class _MediaScreenState extends State<MediaScreen> {
                     label: const Text('刷新'),
                   ),
                 ),
-                const SizedBox(height: 18),
+                SizedBox(height: isCompactLayout(context) ? 12 : 18),
                 LayoutBuilder(
                   builder: (context, constraints) {
                     final stacked = constraints.maxWidth < 760;
@@ -269,7 +269,7 @@ class _MediaScreenState extends State<MediaScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           uploadCard,
-                          const SizedBox(height: 16),
+                          SizedBox(height: isCompactLayout(context) ? 12 : 16),
                           tipsCard,
                         ],
                       );
@@ -279,7 +279,7 @@ class _MediaScreenState extends State<MediaScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Expanded(child: uploadCard),
-                        const SizedBox(width: 16),
+                        SizedBox(width: isCompactLayout(context) ? 12 : 16),
                         Expanded(child: tipsCard),
                       ],
                     );
@@ -288,10 +288,10 @@ class _MediaScreenState extends State<MediaScreen> {
               ],
             ),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: isCompactLayout(context) ? 12 : 16),
           if (_message != null) ...[
             InfoBanner(message: _message!, isError: _isError),
-            const SizedBox(height: 16),
+            SizedBox(height: isCompactLayout(context) ? 12 : 16),
           ],
           if (_loading)
             const BootPanel(title: '正在加载媒体', subtitle: '同步远程媒体列表和当前页状态。')
@@ -303,7 +303,7 @@ class _MediaScreenState extends State<MediaScreen> {
           else
             ..._items.map(
               (item) => Padding(
-                padding: const EdgeInsets.only(bottom: 14),
+                padding: EdgeInsets.only(bottom: isCompactLayout(context) ? 10 : 14),
                 child: _MediaCard(
                   item: item,
                   onEdit: () => _openEdit(item),
@@ -311,7 +311,7 @@ class _MediaScreenState extends State<MediaScreen> {
                 ),
               ),
             ),
-          const SizedBox(height: 4),
+          SizedBox(height: isCompactLayout(context) ? 2 : 4),
           PaginationCard(
             currentPage: _page,
             totalPages: _totalPages,

@@ -148,14 +148,14 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('工作区入口'), findsOneWidget);
-    final openSystemButton = find.widgetWithText(OutlinedButton, '打开系统');
+    final systemCardLabel = find.text('系统');
 
-    expect(openSystemButton, findsOneWidget);
+    expect(systemCardLabel, findsOneWidget);
     expect(find.text('Hello Flutter'), findsOneWidget);
 
-    await tester.ensureVisible(openSystemButton);
+    await tester.ensureVisible(systemCardLabel);
     await tester.pumpAndSettle();
-    await tester.tap(openSystemButton);
+    await tester.tap(systemCardLabel);
     await tester.pumpAndSettle();
 
     expect(openedSystem, isTrue);

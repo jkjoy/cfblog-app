@@ -264,6 +264,21 @@ class _WorkspaceShellState extends State<WorkspaceShell> {
     }
   }
 
+  Future<void> _openMobileSiteSheet() async {
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) => _MobileSiteSheet(
+        config: widget.config,
+        discovery: widget.discovery,
+        session: widget.session,
+        onResetSite: widget.onResetSite,
+        onLogout: widget.onLogout,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final api = CfblogApi(
@@ -356,19 +371,12 @@ class _WorkspaceShellState extends State<WorkspaceShell> {
               : Column(
                   children: [
                     Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-                      child: _TopBar(
-                        session: widget.session,
-                        config: widget.config,
-                        discovery: widget.discovery,
-                        onLogout: widget.onLogout,
-                        onResetSite: widget.onResetSite,
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                      child: _MobileWorkspaceBanner(
+                      padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+                      child: _MobileWorkspaceHeader(
                         item: currentItem,
+                        discovery: widget.discovery,
+                        session: widget.session,
+                        onOpenSiteSheet: _openMobileSiteSheet,
                         onOpenMore: _openMobileWorkspaceSheet,
                       ),
                     ),
@@ -575,44 +583,53 @@ class _Sidebar extends StatelessWidget {
   }
 }
 
-class _MobileWorkspaceBanner extends StatelessWidget {
-  const _MobileWorkspaceBanner({
+class _MobileWorkspaceHeader extends StatelessWidget {
+  const _MobileWorkspaceHeader({
     required this.item,
+    required this.discovery,
+    required this.session,
+    required this.onOpenSiteSheet,
     required this.onOpenMore,
   });
 
   final _WorkspaceNavItem item;
+  final DiscoveryInfo? discovery;
+  final SessionState session;
+  final VoidCallback onOpenSiteSheet;
   final VoidCallback onOpenMore;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final siteLabel = discovery?.name ?? session.user.name;
     return SurfaceCard(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       child: Row(
         children: [
           Container(
-            width: 44,
-            height: 44,
+            width: 40,
+            height: 40,
             decoration: BoxDecoration(
               color: item.tint.withValues(alpha: 0.16),
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(14),
             ),
-            child: Icon(item.icon, color: item.tint),
+            child: Icon(item.icon, size: 20, color: item.tint),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '当前工作区',
+                  siteLabel,
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: AppTheme.textMuted,
                     fontWeight: FontWeight.w600,
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 2),
                 Text(
                   item.label,
                   style: theme.textTheme.titleMedium?.copyWith(
@@ -622,10 +639,28 @@ class _MobileWorkspaceBanner extends StatelessWidget {
               ],
             ),
           ),
-          TextButton.icon(
+          IconButton.filledTonal(
+            onPressed: onOpenSiteSheet,
+            visualDensity: VisualDensity.compact,
+            padding: const EdgeInsets.all(10),
+            style: IconButton.styleFrom(
+              backgroundColor: AppTheme.surfaceMuted,
+              foregroundColor: AppTheme.text,
+            ),
+            icon: const Icon(Icons.dns_rounded, size: 18),
+            tooltip: '站点信息',
+          ),
+          const SizedBox(width: 6),
+          IconButton.filled(
             onPressed: onOpenMore,
+            visualDensity: VisualDensity.compact,
+            padding: const EdgeInsets.all(10),
+            style: IconButton.styleFrom(
+              backgroundColor: item.tint,
+              foregroundColor: Colors.white,
+            ),
             icon: const Icon(Icons.grid_view_rounded, size: 18),
-            label: const Text('全部'),
+            tooltip: '全部工作区',
           ),
         ],
       ),
@@ -654,13 +689,13 @@ class _MobileBottomNavigation extends StatelessWidget {
     };
 
     return SafeArea(
-      minimum: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+      minimum: const EdgeInsets.fromLTRB(10, 0, 10, 10),
       child: SurfaceCard(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
         child: NavigationBar(
           selectedIndex: selectedIndex,
-          labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-          height: 74,
+          labelBehavior: NavigationDestinationLabelBehavior.onlyShowSelected,
+          height: 64,
           onDestinationSelected: (index) {
             if (index == 0) {
               onSelect(WorkspaceTab.overview);
@@ -706,9 +741,9 @@ class _MobileWorkspaceSheet extends StatelessWidget {
     final theme = Theme.of(context);
     return SafeArea(
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(12, 32, 12, 12),
+        padding: const EdgeInsets.fromLTRB(10, 28, 10, 10),
         child: SurfaceCard(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+          padding: const EdgeInsets.fromLTRB(14, 10, 14, 14),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -723,37 +758,37 @@ class _MobileWorkspaceSheet extends StatelessWidget {
                   ),
                 ),
               ),
-              const SizedBox(height: 14),
+              const SizedBox(height: 12),
               Text(
                 '全部工作区',
-                style: theme.textTheme.titleLarge?.copyWith(
+                style: theme.textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.w800,
                 ),
               ),
-              const SizedBox(height: 6),
+              const SizedBox(height: 4),
               Text(
-                '高频入口保留在底部，其余模块集中在这里，窄屏下会更容易扫描。',
-                style: theme.textTheme.bodyMedium?.copyWith(
+                '按内容类型分组，快速跳转到对应模块。',
+                style: theme.textTheme.bodySmall?.copyWith(
                   color: AppTheme.textMuted,
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
               ConstrainedBox(
                 constraints: BoxConstraints(
-                  maxHeight: MediaQuery.sizeOf(context).height * 0.58,
+                  maxHeight: MediaQuery.sizeOf(context).height * 0.52,
                 ),
                 child: SingleChildScrollView(
-                  child: Wrap(
-                    spacing: 12,
-                    runSpacing: 12,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      for (final item in _workspaceItems)
-                        _MobileWorkspaceTile(
-                          item: item,
-                          active: item.tab == currentTab,
-                          onTap: () => Navigator.of(context).pop(item.tab),
+                      for (final group in _workspaceGroups) ...[
+                        _MobileWorkspaceGroup(
+                          group: group,
+                          currentTab: currentTab,
                         ),
-                    ],
+                        const SizedBox(height: 14),
+                      ],
+                    ]..removeLast(),
                   ),
                 ),
               ),
@@ -765,64 +800,255 @@ class _MobileWorkspaceSheet extends StatelessWidget {
   }
 }
 
-class _MobileWorkspaceTile extends StatelessWidget {
-  const _MobileWorkspaceTile({
-    required this.item,
-    required this.active,
-    required this.onTap,
+class _MobileWorkspaceGroup extends StatelessWidget {
+  const _MobileWorkspaceGroup({
+    required this.group,
+    required this.currentTab,
   });
 
-  final _WorkspaceNavItem item;
-  final bool active;
-  final VoidCallback onTap;
+  final _WorkspaceNavGroup group;
+  final WorkspaceTab currentTab;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final width = (MediaQuery.sizeOf(context).width - 52) / 2;
-    final tileWidth = width.clamp(132.0, 220.0).toDouble();
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(22),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 220),
-        width: tileWidth,
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: active ? item.tint.withValues(alpha: 0.14) : AppTheme.surface,
-          borderRadius: BorderRadius.circular(22),
-          border: Border.all(
-            color: active ? item.tint.withValues(alpha: 0.34) : AppTheme.border,
-          ),
-        ),
-        child: Row(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
           children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: active
-                    ? item.tint.withValues(alpha: 0.18)
-                    : AppTheme.surfaceMuted,
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: Icon(
-                item.icon,
-                size: 20,
-                color: active ? item.tint : AppTheme.textMuted,
+            Text(
+              group.title,
+              style: theme.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w800,
               ),
             ),
-            const SizedBox(width: 10),
-            Expanded(
+            const SizedBox(width: 6),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+              decoration: BoxDecoration(
+                color: AppTheme.surfaceMuted,
+                borderRadius: BorderRadius.circular(999),
+              ),
               child: Text(
-                item.label,
-                style: theme.textTheme.titleSmall?.copyWith(
-                  color: AppTheme.text,
+                '${group.items.length} 项',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: AppTheme.textMuted,
                   fontWeight: FontWeight.w700,
                 ),
               ),
             ),
           ],
+        ),
+        const SizedBox(height: 2),
+        Text(
+          group.subtitle,
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: AppTheme.textMuted,
+          ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        const SizedBox(height: 8),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final columns = constraints.maxWidth >= 340 ? 3 : 2;
+            final spacing = 8.0;
+            final tileWidth =
+                (constraints.maxWidth - spacing * (columns - 1)) / columns;
+            return Wrap(
+              spacing: spacing,
+              runSpacing: spacing,
+              children: [
+                for (final item in group.items)
+                  _MobileWorkspaceTile(
+                    item: item,
+                    active: item.tab == currentTab,
+                    width: tileWidth,
+                    onTap: () => Navigator.of(context).pop(item.tab),
+                  ),
+              ],
+            );
+          },
+        ),
+      ],
+    );
+  }
+}
+
+class _MobileWorkspaceTile extends StatelessWidget {
+  const _MobileWorkspaceTile({
+    required this.item,
+    required this.active,
+    required this.width,
+    required this.onTap,
+  });
+
+  final _WorkspaceNavItem item;
+  final bool active;
+  final double width;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(18),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 220),
+        width: width,
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+        decoration: BoxDecoration(
+          color: active ? item.tint.withValues(alpha: 0.14) : AppTheme.surface,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(
+            color: active ? item.tint.withValues(alpha: 0.34) : AppTheme.border,
+          ),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                color: active
+                    ? item.tint.withValues(alpha: 0.18)
+                    : AppTheme.surfaceMuted,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(
+                item.icon,
+                size: 16,
+                color: active ? item.tint : AppTheme.textMuted,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              item.label,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: AppTheme.text,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _MobileSiteSheet extends StatelessWidget {
+  const _MobileSiteSheet({
+    required this.config,
+    required this.discovery,
+    required this.session,
+    required this.onResetSite,
+    required this.onLogout,
+  });
+
+  final AppConfig config;
+  final DiscoveryInfo? discovery;
+  final SessionState session;
+  final Future<void> Function() onResetSite;
+  final Future<void> Function() onLogout;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final siteLabel = discovery?.name ?? session.user.name;
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(10, 28, 10, 10),
+        child: SurfaceCard(
+          padding: const EdgeInsets.fromLTRB(14, 10, 14, 14),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 44,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: AppTheme.border,
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                '站点信息',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 10),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppTheme.surfaceMuted,
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: AppTheme.border),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      siteLabel,
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      config.baseUrl,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: AppTheme.textMuted,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      '当前身份：${roleLabel(session.user.primaryRole)}',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: AppTheme.text,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () async {
+                        Navigator.of(context).pop();
+                        await onResetSite();
+                      },
+                      icon: const Icon(Icons.swap_horiz_rounded, size: 18),
+                      label: const Text('切换站点'),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: FilledButton.icon(
+                      onPressed: () async {
+                        Navigator.of(context).pop();
+                        await onLogout();
+                      },
+                      icon: const Icon(Icons.logout_rounded, size: 18),
+                      label: const Text('退出'),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -835,12 +1061,30 @@ class _WorkspaceNavItem {
     required this.label,
     required this.icon,
     required this.tint,
+    required this.group,
   });
 
   final WorkspaceTab tab;
   final String label;
   final IconData icon;
   final Color tint;
+  final _WorkspaceNavGroupKey group;
+}
+
+enum _WorkspaceNavGroupKey { essentials, publishing, operations, system }
+
+class _WorkspaceNavGroup {
+  const _WorkspaceNavGroup({
+    required this.key,
+    required this.title,
+    required this.subtitle,
+    required this.items,
+  });
+
+  final _WorkspaceNavGroupKey key;
+  final String title;
+  final String subtitle;
+  final List<_WorkspaceNavItem> items;
 }
 
 _WorkspaceNavItem _workspaceItemFor(WorkspaceTab tab) {
@@ -853,54 +1097,98 @@ const List<_WorkspaceNavItem> _workspaceItems = [
     label: '总览',
     icon: Icons.space_dashboard_rounded,
     tint: AppTheme.accent,
+    group: _WorkspaceNavGroupKey.essentials,
   ),
   _WorkspaceNavItem(
     tab: WorkspaceTab.posts,
     label: '文章',
     icon: Icons.article_rounded,
     tint: AppTheme.inkPanel,
+    group: _WorkspaceNavGroupKey.publishing,
   ),
   _WorkspaceNavItem(
     tab: WorkspaceTab.taxonomies,
     label: '分类标签',
     icon: Icons.folder_copy_rounded,
     tint: Color(0xFF21544B),
+    group: _WorkspaceNavGroupKey.publishing,
   ),
   _WorkspaceNavItem(
     tab: WorkspaceTab.links,
     label: '友链',
     icon: Icons.link_rounded,
     tint: Color(0xFF7A5A25),
+    group: _WorkspaceNavGroupKey.operations,
   ),
   _WorkspaceNavItem(
     tab: WorkspaceTab.system,
     label: '系统',
     icon: Icons.tune_rounded,
     tint: Color(0xFF6A5168),
+    group: _WorkspaceNavGroupKey.system,
   ),
   _WorkspaceNavItem(
     tab: WorkspaceTab.pages,
     label: '页面',
     icon: Icons.web_rounded,
     tint: Color(0xFF4C6A61),
+    group: _WorkspaceNavGroupKey.publishing,
   ),
   _WorkspaceNavItem(
     tab: WorkspaceTab.moments,
     label: '动态',
     icon: Icons.bolt_rounded,
     tint: AppTheme.warning,
+    group: _WorkspaceNavGroupKey.operations,
   ),
   _WorkspaceNavItem(
     tab: WorkspaceTab.media,
     label: '媒体',
     icon: Icons.perm_media_rounded,
     tint: Color(0xFF6953B4),
+    group: _WorkspaceNavGroupKey.publishing,
   ),
   _WorkspaceNavItem(
     tab: WorkspaceTab.comments,
     label: '评论',
     icon: Icons.forum_rounded,
     tint: AppTheme.success,
+    group: _WorkspaceNavGroupKey.operations,
+  ),
+];
+
+List<_WorkspaceNavGroup> get _workspaceGroups => [
+  _WorkspaceNavGroup(
+    key: _WorkspaceNavGroupKey.essentials,
+    title: '常用入口',
+    subtitle: '保留最先需要触达的工作台入口。',
+    items: _workspaceItems
+        .where((item) => item.group == _WorkspaceNavGroupKey.essentials)
+        .toList(),
+  ),
+  _WorkspaceNavGroup(
+    key: _WorkspaceNavGroupKey.publishing,
+    title: '内容发布',
+    subtitle: '管理文章、页面、媒体以及内容组织结构。',
+    items: _workspaceItems
+        .where((item) => item.group == _WorkspaceNavGroupKey.publishing)
+        .toList(),
+  ),
+  _WorkspaceNavGroup(
+    key: _WorkspaceNavGroupKey.operations,
+    title: '互动运营',
+    subtitle: '处理评论、动态和站点外部关系维护。',
+    items: _workspaceItems
+        .where((item) => item.group == _WorkspaceNavGroupKey.operations)
+        .toList(),
+  ),
+  _WorkspaceNavGroup(
+    key: _WorkspaceNavGroupKey.system,
+    title: '系统设置',
+    subtitle: '查看用户、权限与全局配置能力。',
+    items: _workspaceItems
+        .where((item) => item.group == _WorkspaceNavGroupKey.system)
+        .toList(),
   ),
 ];
 

@@ -44,6 +44,7 @@ class AppTheme {
     final display = GoogleFonts.spaceGroteskTextTheme(base.textTheme);
 
     return base.copyWith(
+      splashFactory: InkRipple.splashFactory,
       textTheme: bodyText.copyWith(
         displayLarge: display.displayLarge?.copyWith(
           color: text,

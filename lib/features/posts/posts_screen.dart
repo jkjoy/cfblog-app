@@ -112,7 +112,7 @@ class _PostsScreenState extends State<PostsScreen> {
     return RefreshIndicator(
       onRefresh: _loadPosts,
       child: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+        padding: pageContentPadding(context),
         children: [
           SurfaceCard(
             child: Column(
@@ -138,7 +138,7 @@ class _PostsScreenState extends State<PostsScreen> {
                     ],
                   ),
                 ),
-                const SizedBox(height: 18),
+                SizedBox(height: isCompactLayout(context) ? 12 : 18),
                 LayoutBuilder(
                   builder: (context, constraints) {
                     final stacked = constraints.maxWidth < 720;
@@ -158,7 +158,7 @@ class _PostsScreenState extends State<PostsScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           searchField,
-                          const SizedBox(height: 12),
+                          SizedBox(height: isCompactLayout(context) ? 10 : 12),
                           FilledButton(
                             onPressed: _submitSearch,
                             child: const Text('搜索'),
@@ -171,7 +171,7 @@ class _PostsScreenState extends State<PostsScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Expanded(child: searchField),
-                        const SizedBox(width: 12),
+                        SizedBox(width: isCompactLayout(context) ? 8 : 12),
                         FilledButton(
                           onPressed: _submitSearch,
                           child: const Text('搜索'),
@@ -180,7 +180,7 @@ class _PostsScreenState extends State<PostsScreen> {
                     );
                   },
                 ),
-                const SizedBox(height: 16),
+                SizedBox(height: isCompactLayout(context) ? 12 : 16),
                 SelectionChipBar<String>(
                   items: _statusOptions,
                   value: _status,
@@ -193,7 +193,7 @@ class _PostsScreenState extends State<PostsScreen> {
                     _loadPosts();
                   },
                 ),
-                const SizedBox(height: 16),
+                SizedBox(height: isCompactLayout(context) ? 10 : 16),
                 Text(
                   '当前共 $_total 篇，第 $_page / $_totalPages 页',
                   style: Theme.of(
@@ -203,10 +203,10 @@ class _PostsScreenState extends State<PostsScreen> {
               ],
             ),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: isCompactLayout(context) ? 12 : 16),
           if (_error != null) ...[
             InfoBanner(message: _error!, isError: true),
-            const SizedBox(height: 16),
+            SizedBox(height: isCompactLayout(context) ? 12 : 16),
           ],
           if (_loading)
             const BootPanel(title: '正在加载文章', subtitle: '同步远程列表并刷新筛选结果。')
@@ -218,14 +218,14 @@ class _PostsScreenState extends State<PostsScreen> {
           else
             ..._posts.map(
               (post) => Padding(
-                padding: const EdgeInsets.only(bottom: 14),
+                padding: EdgeInsets.only(bottom: isCompactLayout(context) ? 10 : 14),
                 child: _PostCard(
                   post: post,
                   onEdit: () => _openEditor(postId: post.id),
                 ),
               ),
             ),
-          const SizedBox(height: 4),
+          SizedBox(height: isCompactLayout(context) ? 2 : 4),
           PaginationCard(
             currentPage: _page,
             totalPages: _totalPages,

@@ -184,7 +184,7 @@ class _CommentsScreenState extends State<CommentsScreen> {
     return RefreshIndicator(
       onRefresh: _loadComments,
       child: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+        padding: pageContentPadding(context),
         children: [
           SurfaceCard(
             child: Column(
@@ -210,7 +210,7 @@ class _CommentsScreenState extends State<CommentsScreen> {
                     ],
                   ),
                 ),
-                const SizedBox(height: 18),
+                SizedBox(height: isCompactLayout(context) ? 12 : 18),
                 SelectionChipBar<CommentScope>(
                   items: CommentScope.values,
                   value: _scope,
@@ -224,7 +224,7 @@ class _CommentsScreenState extends State<CommentsScreen> {
                     _loadComments();
                   },
                 ),
-                const SizedBox(height: 16),
+                SizedBox(height: isCompactLayout(context) ? 10 : 16),
                 SelectionChipBar<String>(
                   items: _statusOptions,
                   value: _status,
@@ -237,7 +237,7 @@ class _CommentsScreenState extends State<CommentsScreen> {
                     _loadComments();
                   },
                 ),
-                const SizedBox(height: 16),
+                SizedBox(height: isCompactLayout(context) ? 10 : 16),
                 Text(
                   '当前共 $_total 条，第 $_page / $_totalPages 页',
                   style: Theme.of(
@@ -247,10 +247,10 @@ class _CommentsScreenState extends State<CommentsScreen> {
               ],
             ),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: isCompactLayout(context) ? 12 : 16),
           if (_message != null) ...[
             InfoBanner(message: _message!, isError: _isError),
-            const SizedBox(height: 16),
+            SizedBox(height: isCompactLayout(context) ? 12 : 16),
           ],
           if (_loading)
             const BootPanel(title: '正在加载评论', subtitle: '同步远程评论列表和当前筛选状态。')
@@ -262,7 +262,7 @@ class _CommentsScreenState extends State<CommentsScreen> {
           else
             ..._items.map(
               (item) => Padding(
-                padding: const EdgeInsets.only(bottom: 14),
+                padding: EdgeInsets.only(bottom: isCompactLayout(context) ? 10 : 14),
                 child: _CommentCard(
                   comment: item,
                   scope: _scope,
@@ -273,7 +273,7 @@ class _CommentsScreenState extends State<CommentsScreen> {
                 ),
               ),
             ),
-          const SizedBox(height: 4),
+          SizedBox(height: isCompactLayout(context) ? 2 : 4),
           PaginationCard(
             currentPage: _page,
             totalPages: _totalPages,

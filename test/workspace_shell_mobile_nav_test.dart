@@ -90,15 +90,27 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('当前工作区'), findsOneWidget);
+    expect(find.text('CFBlog Site'), findsOneWidget);
     expect(find.text('评论'), findsWidgets);
     expect(find.text('更多'), findsOneWidget);
-    expect(find.text('总览'), findsOneWidget);
 
-    await tester.tap(find.text('更多'));
+    await tester.tap(find.byTooltip('站点信息'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('站点信息'), findsOneWidget);
+    expect(find.text('切换站点'), findsOneWidget);
+
+    await tester.tapAt(const Offset(8, 8));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('全部工作区'));
     await tester.pumpAndSettle();
 
     expect(find.text('全部工作区'), findsOneWidget);
+    expect(find.text('常用入口'), findsOneWidget);
+    expect(find.text('内容发布'), findsOneWidget);
+    expect(find.text('互动运营'), findsOneWidget);
+    expect(find.text('系统设置'), findsOneWidget);
     expect(find.text('分类标签'), findsOneWidget);
     expect(find.text('系统'), findsOneWidget);
   });

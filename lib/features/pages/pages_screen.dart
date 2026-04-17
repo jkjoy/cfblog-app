@@ -142,7 +142,7 @@ class _PagesScreenState extends State<PagesScreen> {
     return RefreshIndicator(
       onRefresh: _loadPages,
       child: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+        padding: pageContentPadding(context),
         children: [
           SurfaceCard(
             child: Column(
@@ -168,7 +168,7 @@ class _PagesScreenState extends State<PagesScreen> {
                     ],
                   ),
                 ),
-                const SizedBox(height: 18),
+                SizedBox(height: isCompactLayout(context) ? 12 : 18),
                 SelectionChipBar<String>(
                   items: _statusOptions,
                   value: _status,
@@ -182,7 +182,7 @@ class _PagesScreenState extends State<PagesScreen> {
                     _loadPages();
                   },
                 ),
-                const SizedBox(height: 16),
+                SizedBox(height: isCompactLayout(context) ? 10 : 16),
                 Text(
                   '当前共 $_total 页，第 $_page / $_totalPages 页',
                   style: Theme.of(
@@ -192,10 +192,10 @@ class _PagesScreenState extends State<PagesScreen> {
               ],
             ),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: isCompactLayout(context) ? 12 : 16),
           if (_message != null) ...[
             InfoBanner(message: _message!, isError: _isError),
-            const SizedBox(height: 16),
+            SizedBox(height: isCompactLayout(context) ? 12 : 16),
           ],
           if (_loading)
             const BootPanel(title: '正在加载页面', subtitle: '同步远程页面列表和当前筛选状态。')
@@ -207,7 +207,7 @@ class _PagesScreenState extends State<PagesScreen> {
           else
             ..._items.map(
               (page) => Padding(
-                padding: const EdgeInsets.only(bottom: 14),
+                padding: EdgeInsets.only(bottom: isCompactLayout(context) ? 10 : 14),
                 child: _PageCard(
                   page: page,
                   onEdit: () => _openEditor(pageId: page.id),
@@ -215,7 +215,7 @@ class _PagesScreenState extends State<PagesScreen> {
                 ),
               ),
             ),
-          const SizedBox(height: 4),
+          SizedBox(height: isCompactLayout(context) ? 2 : 4),
           PaginationCard(
             currentPage: _page,
             totalPages: _totalPages,
