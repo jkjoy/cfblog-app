@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../../core/formatters.dart';
 import '../../core/models.dart';
+import '../../theme/app_theme.dart';
 import '../../widgets/app_chrome.dart';
 
 class ConnectionScreen extends StatefulWidget {
@@ -40,7 +42,9 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
   @override
   void initState() {
     super.initState();
-    _baseUrlController = TextEditingController(text: widget.initialUrl);
+    _baseUrlController = TextEditingController(
+      text: _displayDomainInput(widget.initialUrl),
+    );
     _discovery = widget.initialDiscovery;
   }
 
@@ -50,6 +54,18 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
     _usernameController.dispose();
     _passwordController.dispose();
     super.dispose();
+  }
+
+  void _sanitizeDomainInput(String value) {
+    final sanitized = _displayDomainInput(value);
+    if (sanitized == value) {
+      return;
+    }
+
+    _baseUrlController.value = TextEditingValue(
+      text: sanitized,
+      selection: TextSelection.collapsed(offset: sanitized.length),
+    );
   }
 
   Future<void> _handleInspect() async {
@@ -118,37 +134,62 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
   Widget build(BuildContext context) {
     final width = MediaQuery.sizeOf(context).width;
     final isWide = width >= 980;
+    final compact = isCompactLayout(context);
+    final stackedCredentials = width < 620;
 
     final introPanel = SurfaceCard(
+      padding: EdgeInsets.all(compact ? 14 : 18),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'CFBlog Flutter 工作台',
-            style: Theme.of(context).textTheme.displaySmall,
+          Row(
+            children: [
+              Container(
+                width: compact ? 42 : 52,
+                height: compact ? 42 : 52,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF6D7C8),
+                  borderRadius: BorderRadius.circular(compact ? 14 : 18),
+                ),
+                child: Icon(
+                  Icons.space_dashboard_rounded,
+                  color: const Color(0xFFD96C3D),
+                  size: compact ? 20 : 24,
+                ),
+              ),
+              SizedBox(width: compact ? 10 : 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'CFBlog Flutter',
+                      style: (compact
+                              ? Theme.of(context).textTheme.titleLarge
+                              : Theme.of(context).textTheme.headlineSmall)
+                          ?.copyWith(fontWeight: FontWeight.w800),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '输入域名，直接进入工作台。',
+                      style: Theme.of(
+                        context,
+                      ).textTheme.bodySmall?.copyWith(color: AppTheme.textMuted),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 12),
-          Text(
-            '为移动端后台维护重做的技术指挥台。先连接站点，再登录你的管理员或编辑账号。',
-            style: Theme.of(context).textTheme.bodyLarge,
-          ),
-          const SizedBox(height: 24),
-          _FeatureRow(
-            icon: Icons.devices_rounded,
-            title: '跨端一致',
-            subtitle: '同一套 Flutter 界面覆盖 Android、iOS 和 Web。',
-          ),
-          const SizedBox(height: 14),
-          _FeatureRow(
-            icon: Icons.dashboard_customize_rounded,
-            title: '更清晰的层级',
-            subtitle: '从内容维护任务出发，优先展示高频操作和状态反馈。',
-          ),
-          const SizedBox(height: 14),
-          _FeatureRow(
-            icon: Icons.draw_rounded,
-            title: '更强的视觉系统',
-            subtitle: '深色指挥台侧栏配暖色内容区，减少传统后台的乏味感。',
+          SizedBox(height: compact ? 12 : 14),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: const [
+              _IntroPill(icon: Icons.public_rounded, label: '域名直连'),
+              _IntroPill(icon: Icons.lock_rounded, label: '自动补全 HTTPS'),
+              _IntroPill(icon: Icons.devices_rounded, label: '跨端一致'),
+            ],
           ),
         ],
       ),
@@ -160,41 +201,60 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
         children: [
           const SectionHeading(
             title: '连接你的 CFBlog 站点',
-            subtitle: '支持现有 wp-json/wp/v2 接口，无需改后端结构。',
+            subtitle: '只输入域名即可，系统会自动补全 https 并连接 wp-json 接口。',
           ),
-          const SizedBox(height: 20),
+          SizedBox(height: compact ? 14 : 20),
           TextField(
             controller: _baseUrlController,
             keyboardType: TextInputType.url,
+            onChanged: _sanitizeDomainInput,
             decoration: const InputDecoration(
-              labelText: '站点地址',
-              hintText: 'https://your-domain.com',
+              labelText: '站点域名',
+              hintText: 'your-domain.com',
+              helperText: '支持子目录，例如 example.com/blog',
+              prefixText: 'https://',
             ),
           ),
-          const SizedBox(height: 14),
-          Row(
-            children: [
-              Expanded(
-                child: TextField(
+          SizedBox(height: compact ? 10 : 14),
+          if (stackedCredentials)
+            Column(
+              children: [
+                TextField(
                   controller: _usernameController,
                   decoration: const InputDecoration(labelText: '用户名'),
                 ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: TextField(
+                const SizedBox(height: 10),
+                TextField(
                   controller: _passwordController,
                   obscureText: true,
                   decoration: const InputDecoration(labelText: '密码'),
                 ),
-              ),
-            ],
-          ),
+              ],
+            )
+          else
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _usernameController,
+                    decoration: const InputDecoration(labelText: '用户名'),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: TextField(
+                    controller: _passwordController,
+                    obscureText: true,
+                    decoration: const InputDecoration(labelText: '密码'),
+                  ),
+                ),
+              ],
+            ),
           if (_message != null) ...[
-            const SizedBox(height: 16),
+            SizedBox(height: compact ? 12 : 16),
             InfoBanner(message: _message!, isError: _isError),
           ],
-          const SizedBox(height: 18),
+          SizedBox(height: compact ? 14 : 18),
           Wrap(
             spacing: 12,
             runSpacing: 12,
@@ -227,13 +287,13 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
             ],
           ),
           if (_discovery != null) ...[
-            const SizedBox(height: 24),
+            SizedBox(height: compact ? 16 : 24),
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(18),
+              padding: EdgeInsets.all(compact ? 14 : 18),
               decoration: BoxDecoration(
                 color: const Color(0xFFF6F0E8),
-                borderRadius: BorderRadius.circular(22),
+                borderRadius: BorderRadius.circular(compact ? 18 : 22),
                 border: Border.all(color: const Color(0xFFD7CBBE)),
               ),
               child: Column(
@@ -269,7 +329,7 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
         backgroundColor: Colors.transparent,
         body: SafeArea(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(20),
+            padding: EdgeInsets.all(compact ? 12 : 20),
             child: Center(
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 1240),
@@ -277,15 +337,16 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
                     ? Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Expanded(flex: 11, child: introPanel),
-                          const SizedBox(width: 18),
-                          Expanded(flex: 10, child: formPanel),
+                          Expanded(flex: 8, child: introPanel),
+                          const SizedBox(width: 16),
+                          Expanded(flex: 11, child: formPanel),
                         ],
                       )
                     : Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           introPanel,
-                          const SizedBox(height: 16),
+                          SizedBox(height: compact ? 12 : 16),
                           formPanel,
                         ],
                       ),
@@ -298,44 +359,47 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
   }
 }
 
-class _FeatureRow extends StatelessWidget {
-  const _FeatureRow({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-  });
+String _displayDomainInput(String value) {
+  if (value.trim().isEmpty) {
+    return '';
+  }
+
+  final normalized = normalizeBaseUrl(value);
+  return normalized.replaceFirst(
+    RegExp(r'^[a-zA-Z][a-zA-Z0-9+.-]*://'),
+    '',
+  );
+}
+
+class _IntroPill extends StatelessWidget {
+  const _IntroPill({required this.icon, required this.label});
 
   final IconData icon;
-  final String title;
-  final String subtitle;
+  final String label;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          width: 46,
-          height: 46,
-          decoration: BoxDecoration(
-            color: const Color(0xFFF6D7C8),
-            borderRadius: BorderRadius.circular(16),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: AppTheme.surfaceMuted,
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: AppTheme.border),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 15, color: AppTheme.textMuted),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: AppTheme.text,
+              fontWeight: FontWeight.w700,
+            ),
           ),
-          child: Icon(icon, color: const Color(0xFFD96C3D)),
-        ),
-        const SizedBox(width: 14),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(title, style: theme.textTheme.titleMedium),
-              const SizedBox(height: 4),
-              Text(subtitle, style: theme.textTheme.bodyMedium),
-            ],
-          ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

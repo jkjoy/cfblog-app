@@ -148,10 +148,12 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('工作区入口'), findsOneWidget);
-    final systemCardLabel = find.text('系统');
+    final systemLabels = find.text('系统');
+    final systemCardLabel = systemLabels.last;
 
-    expect(systemCardLabel, findsOneWidget);
-    expect(find.text('Hello Flutter'), findsOneWidget);
+    expect(systemLabels, findsWidgets);
+    expect(find.text('核心指标'), findsOneWidget);
+    expect(find.text('最近文章'), findsNothing);
 
     await tester.ensureVisible(systemCardLabel);
     await tester.pumpAndSettle();

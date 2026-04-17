@@ -1,5 +1,11 @@
 String normalizeBaseUrl(String value) {
-  return value.trim().replaceFirst(RegExp(r'/+$'), '');
+  final trimmed = value.trim().replaceFirst(RegExp(r'/+$'), '');
+  if (trimmed.isEmpty) {
+    return '';
+  }
+
+  final hasScheme = RegExp(r'^[a-zA-Z][a-zA-Z0-9+.-]*://').hasMatch(trimmed);
+  return hasScheme ? trimmed : 'https://$trimmed';
 }
 
 String stripHtml(String input) {
