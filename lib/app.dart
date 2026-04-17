@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 
 import 'core/cfblog_api.dart';
 import 'core/formatters.dart';
@@ -216,6 +217,8 @@ class WorkspaceShell extends StatefulWidget {
     required this.session,
     required this.onLogout,
     required this.onResetSite,
+    this.client,
+    this.initialTab = WorkspaceTab.overview,
   });
 
   final AppConfig config;
@@ -223,19 +226,54 @@ class WorkspaceShell extends StatefulWidget {
   final SessionState session;
   final Future<void> Function() onLogout;
   final Future<void> Function() onResetSite;
+  final http.Client? client;
+  final WorkspaceTab initialTab;
 
   @override
   State<WorkspaceShell> createState() => _WorkspaceShellState();
 }
 
 class _WorkspaceShellState extends State<WorkspaceShell> {
-  WorkspaceTab _currentTab = WorkspaceTab.overview;
+  late WorkspaceTab _currentTab;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentTab = widget.initialTab;
+  }
+
+  void _selectTab(WorkspaceTab tab) {
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _currentTab = tab;
+    });
+  }
+
+  Future<void> _openMobileWorkspaceSheet() async {
+    final selected = await showModalBottomSheet<WorkspaceTab>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) => _MobileWorkspaceSheet(currentTab: _currentTab),
+    );
+
+    if (selected != null) {
+      _selectTab(selected);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final api = CfblogApi(widget.config.baseUrl, token: widget.session.token);
+    final api = CfblogApi(
+      widget.config.baseUrl,
+      token: widget.session.token,
+      client: widget.client,
+    );
     final width = MediaQuery.sizeOf(context).width;
     final isWide = width >= 1080;
+    final currentItem = _workspaceItemFor(_currentTab);
 
     final screen = switch (_currentTab) {
       WorkspaceTab.overview => DashboardScreen(
@@ -243,16 +281,14 @@ class _WorkspaceShellState extends State<WorkspaceShell> {
         config: widget.config,
         discovery: widget.discovery,
         session: widget.session,
-        onOpenPosts: () => setState(() => _currentTab = WorkspaceTab.posts),
-        onOpenTaxonomies: () =>
-            setState(() => _currentTab = WorkspaceTab.taxonomies),
-        onOpenLinks: () => setState(() => _currentTab = WorkspaceTab.links),
-        onOpenSystem: () => setState(() => _currentTab = WorkspaceTab.system),
-        onOpenPages: () => setState(() => _currentTab = WorkspaceTab.pages),
-        onOpenMoments: () => setState(() => _currentTab = WorkspaceTab.moments),
-        onOpenMedia: () => setState(() => _currentTab = WorkspaceTab.media),
-        onOpenComments: () =>
-            setState(() => _currentTab = WorkspaceTab.comments),
+        onOpenPosts: () => _selectTab(WorkspaceTab.posts),
+        onOpenTaxonomies: () => _selectTab(WorkspaceTab.taxonomies),
+        onOpenLinks: () => _selectTab(WorkspaceTab.links),
+        onOpenSystem: () => _selectTab(WorkspaceTab.system),
+        onOpenPages: () => _selectTab(WorkspaceTab.pages),
+        onOpenMoments: () => _selectTab(WorkspaceTab.moments),
+        onOpenMedia: () => _selectTab(WorkspaceTab.media),
+        onOpenComments: () => _selectTab(WorkspaceTab.comments),
       ),
       WorkspaceTab.posts => PostsScreen(api: api),
       WorkspaceTab.taxonomies => TaxonomiesScreen(api: api),
@@ -270,6 +306,13 @@ class _WorkspaceShellState extends State<WorkspaceShell> {
     return AppBackdrop(
       child: Scaffold(
         backgroundColor: Colors.transparent,
+        bottomNavigationBar: isWide
+            ? null
+            : _MobileBottomNavigation(
+                currentTab: _currentTab,
+                onSelect: _selectTab,
+                onOpenMore: _openMobileWorkspaceSheet,
+              ),
         body: SafeArea(
           child: isWide
               ? Row(
@@ -278,7 +321,7 @@ class _WorkspaceShellState extends State<WorkspaceShell> {
                       config: widget.config,
                       session: widget.session,
                       currentTab: _currentTab,
-                      onSelect: (tab) => setState(() => _currentTab = tab),
+                      onSelect: _selectTab,
                       onLogout: widget.onLogout,
                       onResetSite: widget.onResetSite,
                     ),
@@ -324,9 +367,9 @@ class _WorkspaceShellState extends State<WorkspaceShell> {
                     ),
                     Padding(
                       padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                      child: _CompactWorkspaceSwitch(
-                        currentTab: _currentTab,
-                        onSelect: (tab) => setState(() => _currentTab = tab),
+                      child: _MobileWorkspaceBanner(
+                        item: currentItem,
+                        onOpenMore: _openMobileWorkspaceSheet,
                       ),
                     ),
                     Expanded(
@@ -532,40 +575,198 @@ class _Sidebar extends StatelessWidget {
   }
 }
 
-class _CompactWorkspaceSwitch extends StatelessWidget {
-  const _CompactWorkspaceSwitch({
+class _MobileWorkspaceBanner extends StatelessWidget {
+  const _MobileWorkspaceBanner({
+    required this.item,
+    required this.onOpenMore,
+  });
+
+  final _WorkspaceNavItem item;
+  final VoidCallback onOpenMore;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return SurfaceCard(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      child: Row(
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: item.tint.withValues(alpha: 0.16),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Icon(item.icon, color: item.tint),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '当前工作区',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: AppTheme.textMuted,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  item.label,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          TextButton.icon(
+            onPressed: onOpenMore,
+            icon: const Icon(Icons.grid_view_rounded, size: 18),
+            label: const Text('全部'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MobileBottomNavigation extends StatelessWidget {
+  const _MobileBottomNavigation({
     required this.currentTab,
     required this.onSelect,
+    required this.onOpenMore,
   });
 
   final WorkspaceTab currentTab;
   final ValueChanged<WorkspaceTab> onSelect;
+  final VoidCallback onOpenMore;
 
   @override
   Widget build(BuildContext context) {
-    return SurfaceCard(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          children: [
-            for (final item in _workspaceItems) ...[
-              _CompactWorkspaceChip(
-                item: item,
-                active: item.tab == currentTab,
-                onTap: () => onSelect(item.tab),
-              ),
-              const SizedBox(width: 10),
-            ],
-          ]..removeLast(),
+    final selectedIndex = switch (currentTab) {
+      WorkspaceTab.overview => 0,
+      WorkspaceTab.posts => 1,
+      WorkspaceTab.media => 2,
+      _ => 3,
+    };
+
+    return SafeArea(
+      minimum: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+      child: SurfaceCard(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+        child: NavigationBar(
+          selectedIndex: selectedIndex,
+          labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+          height: 74,
+          onDestinationSelected: (index) {
+            if (index == 0) {
+              onSelect(WorkspaceTab.overview);
+            } else if (index == 1) {
+              onSelect(WorkspaceTab.posts);
+            } else if (index == 2) {
+              onSelect(WorkspaceTab.media);
+            } else {
+              onOpenMore();
+            }
+          },
+          destinations: const [
+            NavigationDestination(
+              icon: Icon(Icons.space_dashboard_rounded),
+              label: '总览',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.article_rounded),
+              label: '文章',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.perm_media_rounded),
+              label: '媒体',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.grid_view_rounded),
+              label: '更多',
+            ),
+          ],
         ),
       ),
     );
   }
 }
 
-class _CompactWorkspaceChip extends StatelessWidget {
-  const _CompactWorkspaceChip({
+class _MobileWorkspaceSheet extends StatelessWidget {
+  const _MobileWorkspaceSheet({required this.currentTab});
+
+  final WorkspaceTab currentTab;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(12, 32, 12, 12),
+        child: SurfaceCard(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 44,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: AppTheme.border,
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 14),
+              Text(
+                '全部工作区',
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                '高频入口保留在底部，其余模块集中在这里，窄屏下会更容易扫描。',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: AppTheme.textMuted,
+                ),
+              ),
+              const SizedBox(height: 16),
+              ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxHeight: MediaQuery.sizeOf(context).height * 0.58,
+                ),
+                child: SingleChildScrollView(
+                  child: Wrap(
+                    spacing: 12,
+                    runSpacing: 12,
+                    children: [
+                      for (final item in _workspaceItems)
+                        _MobileWorkspaceTile(
+                          item: item,
+                          active: item.tab == currentTab,
+                          onTap: () => Navigator.of(context).pop(item.tab),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _MobileWorkspaceTile extends StatelessWidget {
+  const _MobileWorkspaceTile({
     required this.item,
     required this.active,
     required this.onTap,
@@ -578,33 +779,47 @@ class _CompactWorkspaceChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final width = (MediaQuery.sizeOf(context).width - 52) / 2;
+    final tileWidth = width.clamp(132.0, 220.0).toDouble();
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(999),
+      borderRadius: BorderRadius.circular(22),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 220),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        width: tileWidth,
+        padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: active ? item.tint.withValues(alpha: 0.16) : Colors.white,
-          borderRadius: BorderRadius.circular(999),
+          color: active ? item.tint.withValues(alpha: 0.14) : AppTheme.surface,
+          borderRadius: BorderRadius.circular(22),
           border: Border.all(
             color: active ? item.tint.withValues(alpha: 0.34) : AppTheme.border,
           ),
         ),
         child: Row(
-          mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              item.icon,
-              size: 18,
-              color: active ? item.tint : AppTheme.textMuted,
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: active
+                    ? item.tint.withValues(alpha: 0.18)
+                    : AppTheme.surfaceMuted,
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Icon(
+                item.icon,
+                size: 20,
+                color: active ? item.tint : AppTheme.textMuted,
+              ),
             ),
-            const SizedBox(width: 8),
-            Text(
-              item.label,
-              style: theme.textTheme.titleSmall?.copyWith(
-                color: active ? AppTheme.text : AppTheme.textMuted,
-                fontWeight: FontWeight.w700,
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                item.label,
+                style: theme.textTheme.titleSmall?.copyWith(
+                  color: AppTheme.text,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
             ),
           ],
@@ -626,6 +841,10 @@ class _WorkspaceNavItem {
   final String label;
   final IconData icon;
   final Color tint;
+}
+
+_WorkspaceNavItem _workspaceItemFor(WorkspaceTab tab) {
+  return _workspaceItems.firstWhere((item) => item.tab == tab);
 }
 
 const List<_WorkspaceNavItem> _workspaceItems = [
@@ -753,46 +972,56 @@ class _TopBar extends StatelessWidget {
       child: LayoutBuilder(
         builder: (context, constraints) {
           final stacked = constraints.maxWidth < 760;
-          return Flex(
-            direction: stacked ? Axis.vertical : Axis.horizontal,
+          final siteInfo = Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Flexible(
-                fit: stacked ? FlexFit.loose : FlexFit.tight,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      discovery?.name ?? session.user.name,
-                      style: theme.textTheme.headlineSmall,
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      config.baseUrl,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: AppTheme.textMuted,
-                      ),
-                    ),
-                  ],
+              Text(
+                discovery?.name ?? session.user.name,
+                style: theme.textTheme.headlineSmall,
+              ),
+              const SizedBox(height: 6),
+              Text(
+                config.baseUrl,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: AppTheme.textMuted,
                 ),
               ),
-              SizedBox(width: stacked ? 0 : 12, height: stacked ? 12 : 0),
-              Wrap(
-                spacing: 12,
-                runSpacing: 12,
-                children: [
-                  OutlinedButton.icon(
-                    onPressed: onResetSite,
-                    icon: const Icon(Icons.settings_ethernet_rounded),
-                    label: const Text('切换站点'),
-                  ),
-                  FilledButton.icon(
-                    onPressed: onLogout,
-                    icon: const Icon(Icons.logout_rounded),
-                    label: const Text('退出'),
-                  ),
-                ],
+            ],
+          );
+          final actions = Wrap(
+            spacing: 12,
+            runSpacing: 12,
+            children: [
+              OutlinedButton.icon(
+                onPressed: onResetSite,
+                icon: const Icon(Icons.settings_ethernet_rounded),
+                label: const Text('切换站点'),
               ),
+              FilledButton.icon(
+                onPressed: onLogout,
+                icon: const Icon(Icons.logout_rounded),
+                label: const Text('退出'),
+              ),
+            ],
+          );
+
+          if (stacked) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                siteInfo,
+                const SizedBox(height: 12),
+                actions,
+              ],
+            );
+          }
+
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(child: siteInfo),
+              const SizedBox(width: 12),
+              actions,
             ],
           );
         },
