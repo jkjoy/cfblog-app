@@ -37,18 +37,23 @@ class _LinksWorkspaceScreenState extends State<LinksWorkspaceScreen> {
     _loadWorkspace();
   }
 
-  Future<void> _loadWorkspace() async {
+  Future<void> _loadWorkspace({bool refresh = false}) async {
     setState(() {
       _loading = true;
       _message = null;
     });
 
     try {
-      final categoriesFuture = widget.api.listLinkCategories();
+      final categoriesFuture = widget.api.listLinkCategories(refresh: refresh);
       if (_isLinks) {
         final results = await Future.wait<Object>([
           categoriesFuture,
-          widget.api.listLinks(page: _page, perPage: 12, visible: _visible),
+          widget.api.listLinks(
+            page: _page,
+            perPage: 12,
+            visible: _visible,
+            refresh: refresh,
+          ),
         ]);
         if (!mounted) {
           return;
@@ -248,7 +253,7 @@ class _LinksWorkspaceScreenState extends State<LinksWorkspaceScreen> {
     );
 
     return RefreshIndicator(
-      onRefresh: _loadWorkspace,
+      onRefresh: () => _loadWorkspace(refresh: true),
       child: ListView(
         padding: pageContentPadding(context),
         children: [
@@ -262,7 +267,7 @@ class _LinksWorkspaceScreenState extends State<LinksWorkspaceScreen> {
                   runSpacing: 8,
                   children: [
                     FilledButton.tonalIcon(
-                      onPressed: _loadWorkspace,
+                      onPressed: () => _loadWorkspace(refresh: true),
                       style: toolbarButtonStyle,
                       icon: const Icon(Icons.refresh_rounded),
                       label: const Text('刷新'),

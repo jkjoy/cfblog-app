@@ -286,6 +286,13 @@ class _WorkspaceShellState extends State<WorkspaceShell> {
     }
   }
 
+  Future<void> _openMobilePostComposer(CfblogApi api) async {
+    final changed = await openPostEditorScreen(context, api: api);
+    if (changed == true) {
+      _selectTab(WorkspaceTab.posts);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final api = CfblogApi(
@@ -333,6 +340,7 @@ class _WorkspaceShellState extends State<WorkspaceShell> {
             : _MobileBottomNavigation(
                 currentTab: _currentTab,
                 onSelect: _selectTab,
+                onComposePost: () => _openMobilePostComposer(api),
                 onComposeMoment: () => _openMobileMomentComposer(api),
               ),
         body: SafeArea(
@@ -679,11 +687,13 @@ class _MobileBottomNavigation extends StatelessWidget {
   const _MobileBottomNavigation({
     required this.currentTab,
     required this.onSelect,
+    required this.onComposePost,
     required this.onComposeMoment,
   });
 
   final WorkspaceTab currentTab;
   final ValueChanged<WorkspaceTab> onSelect;
+  final VoidCallback onComposePost;
   final VoidCallback onComposeMoment;
 
   @override
@@ -703,25 +713,27 @@ class _MobileBottomNavigation extends StatelessWidget {
               ),
             ),
             Expanded(
-              child: _MobileNavItem(
-                icon: Icons.article_rounded,
-                label: '文章',
+              child: _MobileComposeItem(
+                icon: Icons.bolt_rounded,
+                label: '发动态',
+                selected: currentTab == WorkspaceTab.moments,
+                onTap: onComposeMoment,
+              ),
+            ),            
+            Expanded(
+              child: _MobileComposeItem(
+                icon: Icons.edit_note_rounded,
+                label: '写文章',
                 selected: currentTab == WorkspaceTab.posts,
-                onTap: () => onSelect(WorkspaceTab.posts),
+                onTap: onComposePost,
               ),
             ),
             Expanded(
               child: _MobileNavItem(
                 icon: Icons.perm_media_rounded,
-                label: '媒体',
+                label: '媒体库',
                 selected: currentTab == WorkspaceTab.media,
                 onTap: () => onSelect(WorkspaceTab.media),
-              ),
-            ),
-            Expanded(
-              child: _MobileComposeItem(
-                selected: currentTab == WorkspaceTab.moments,
-                onTap: onComposeMoment,
               ),
             ),
           ],
@@ -775,10 +787,14 @@ class _MobileNavItem extends StatelessWidget {
 
 class _MobileComposeItem extends StatelessWidget {
   const _MobileComposeItem({
+    required this.icon,
+    required this.label,
     required this.selected,
     required this.onTap,
   });
 
+  final IconData icon;
+  final String label;
   final bool selected;
   final VoidCallback onTap;
 
@@ -799,15 +815,15 @@ class _MobileComposeItem extends StatelessWidget {
                 color: selected ? AppTheme.accent : AppTheme.inkPanel,
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: const Icon(
-                Icons.bolt_rounded,
+              child: Icon(
+                icon,
                 size: 18,
                 color: Colors.white,
               ),
             ),
             const SizedBox(height: 4),
             Text(
-              '撰写',
+              label,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(

@@ -48,8 +48,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
     _future = widget.api.getDashboardSnapshot();
   }
 
-  Future<void> _reload() async {
-    final next = widget.api.getDashboardSnapshot();
+  Future<void> _reload({bool refresh = true}) async {
+    final next = widget.api.getDashboardSnapshot(refresh: refresh);
     setState(() {
       _future = next;
     });
@@ -60,7 +60,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget build(BuildContext context) {
     final compact = isCompactLayout(context);
     return RefreshIndicator(
-      onRefresh: _reload,
+      onRefresh: () => _reload(refresh: true),
       child: ListView(
         padding: pageContentPadding(context),
         children: [
@@ -203,7 +203,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               ),
                             ),
                             OutlinedButton.icon(
-                              onPressed: _reload,
+                              onPressed: () => _reload(refresh: true),
                               icon: const Icon(Icons.refresh_rounded),
                               label: const Text('刷新'),
                             ),

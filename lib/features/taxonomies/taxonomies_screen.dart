@@ -44,7 +44,7 @@ class _TaxonomiesScreenState extends State<TaxonomiesScreen> {
 
   String get _createLabel => _isCategory ? '新建分类' : '新建标签';
 
-  Future<void> _loadTerms() async {
+  Future<void> _loadTerms({bool refresh = false}) async {
     setState(() {
       _loading = true;
       _message = null;
@@ -56,11 +56,13 @@ class _TaxonomiesScreenState extends State<TaxonomiesScreen> {
               page: _page,
               perPage: 12,
               search: _search,
+              refresh: refresh,
             )
           : await widget.api.listTags(
               page: _page,
               perPage: 12,
               search: _search,
+              refresh: refresh,
             );
 
       if (!mounted) {
@@ -196,7 +198,7 @@ class _TaxonomiesScreenState extends State<TaxonomiesScreen> {
     );
 
     return RefreshIndicator(
-      onRefresh: _loadTerms,
+      onRefresh: () => _loadTerms(refresh: true),
       child: ListView(
         padding: pageContentPadding(context),
         children: [
@@ -210,7 +212,7 @@ class _TaxonomiesScreenState extends State<TaxonomiesScreen> {
                   runSpacing: 8,
                   children: [
                     FilledButton.tonalIcon(
-                      onPressed: _loadTerms,
+                      onPressed: () => _loadTerms(refresh: true),
                       style: toolbarButtonStyle,
                       icon: const Icon(Icons.refresh_rounded),
                       label: const Text('刷新'),

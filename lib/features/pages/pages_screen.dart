@@ -39,7 +39,7 @@ class _PagesScreenState extends State<PagesScreen> {
     _loadPages();
   }
 
-  Future<void> _loadPages() async {
+  Future<void> _loadPages({bool refresh = false}) async {
     setState(() {
       _loading = true;
       _message = null;
@@ -49,6 +49,7 @@ class _PagesScreenState extends State<PagesScreen> {
         page: _page,
         perPage: 12,
         status: _status,
+        refresh: refresh,
       );
       if (!mounted) {
         return;
@@ -148,7 +149,7 @@ class _PagesScreenState extends State<PagesScreen> {
     );
 
     return RefreshIndicator(
-      onRefresh: _loadPages,
+      onRefresh: () => _loadPages(refresh: true),
       child: ListView(
         padding: pageContentPadding(context),
         children: [
@@ -162,7 +163,7 @@ class _PagesScreenState extends State<PagesScreen> {
                   runSpacing: 8,
                   children: [
                     FilledButton.tonalIcon(
-                      onPressed: _loadPages,
+                      onPressed: () => _loadPages(refresh: true),
                       style: toolbarButtonStyle,
                       icon: const Icon(Icons.refresh_rounded),
                       label: const Text('刷新'),

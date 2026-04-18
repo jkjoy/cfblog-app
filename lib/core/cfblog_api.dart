@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 
+import 'api_cache_store.dart';
 import 'formatters.dart';
 import 'media_upload.dart';
 import 'models.dart';
@@ -17,8 +18,11 @@ class CfblogApi {
   final String baseUrl;
   final String? token;
   final http.Client _client;
+  final ApiCacheStore _cacheStore = ApiCacheStore.instance;
 
   String get normalizedBaseUrl => normalizeBaseUrl(baseUrl);
+  String get _cacheScope =>
+      'base=${Uri.encodeComponent(normalizedBaseUrl)}|auth=${_tokenFingerprint()}';
 
   Uri _buildUri(
     String path, {
@@ -86,7 +90,120 @@ class CfblogApi {
       throw Exception(message);
     }
 
-    return _ApiResponse(data: decoder(payload), headers: response.headers);
+    return _ApiResponse(
+      data: decoder(payload),
+      headers: response.headers,
+      rawBody: response.body,
+    );
+  }
+
+  Future<_ApiResponse<T>> _requestCached<T>(
+    String path, {
+    Map<String, dynamic>? query,
+    ApiRoot root = ApiRoot.v2,
+    bool refresh = false,
+    required T Function(Object? json) decoder,
+  }) async {
+    final cacheKey = _buildCacheKey(path, query: query, root: root);
+    if (!refresh) {
+      final cached = await _cacheStore.read(cacheKey);
+      if (cached != null) {
+        return _decodeCachedResponse(cached, decoder: decoder);
+      }
+    }
+
+    final result = await _request<T>(
+      path,
+      query: query,
+      root: root,
+      decoder: decoder,
+    );
+
+    try {
+      await _cacheStore.write(
+        cacheKey,
+        CachedHttpResponse(
+          body: result.rawBody,
+          headers: result.headers,
+          cachedAt: DateTime.now().toUtc().toIso8601String(),
+        ),
+      );
+    } catch (_) {}
+
+    return result;
+  }
+
+  Future<void> _invalidateSessionCache() async {
+    try {
+      await _cacheStore.invalidateScope(_cacheScope);
+    } catch (_) {}
+  }
+
+  String _buildCacheKey(
+    String path, {
+    Map<String, dynamic>? query,
+    ApiRoot root = ApiRoot.v2,
+  }) {
+    final normalizedQuery = _normalizeQuery(query);
+    final queryPart = normalizedQuery.entries
+        .map(
+          (entry) =>
+              '${Uri.encodeQueryComponent(entry.key)}=${Uri.encodeQueryComponent(entry.value)}',
+        )
+        .join('&');
+    return '$_cacheScope|root=${root.name}|path=$path|query=$queryPart';
+  }
+
+  Map<String, String> _normalizeQuery(Map<String, dynamic>? query) {
+    if (query == null || query.isEmpty) {
+      return const <String, String>{};
+    }
+
+    final entries = query.entries
+        .where(
+          (entry) =>
+              entry.value != null &&
+              entry.value.toString().trim().isNotEmpty,
+        )
+        .map((entry) => MapEntry(entry.key, entry.value.toString()))
+        .toList()
+      ..sort((left, right) => left.key.compareTo(right.key));
+
+    return Map<String, String>.fromEntries(entries);
+  }
+
+  String _tokenFingerprint() {
+    final value = token;
+    if (value == null || value.isEmpty) {
+      return 'guest';
+    }
+
+    var hash = 2166136261;
+    for (final codeUnit in value.codeUnits) {
+      hash ^= codeUnit;
+      hash = (hash * 16777619) & 0xFFFFFFFF;
+    }
+    return hash.toRadixString(16).padLeft(8, '0');
+  }
+
+  _ApiResponse<T> _decodeCachedResponse<T>(
+    CachedHttpResponse cached, {
+    required T Function(Object? json) decoder,
+  }) {
+    Object? payload;
+    if (cached.body.isNotEmpty) {
+      try {
+        payload = jsonDecode(cached.body);
+      } catch (_) {
+        payload = cached.body;
+      }
+    }
+
+    return _ApiResponse(
+      data: decoder(payload),
+      headers: cached.headers,
+      rawBody: cached.body,
+    );
   }
 
   Future<DiscoveryInfo> getDiscovery() async {
@@ -130,8 +247,9 @@ class CfblogApi {
     int perPage = 12,
     String search = '',
     String status = 'publish',
+    bool refresh = false,
   }) async {
-    final result = await _request<List<WpPost>>(
+    final result = await _requestCached<List<WpPost>>(
       '/posts',
       query: {
         'page': page,
@@ -139,6 +257,7 @@ class CfblogApi {
         'search': search,
         'status': status,
       },
+      refresh: refresh,
       decoder: (json) =>
           _asList(json).map((entry) => WpPost.fromJson(_asMap(entry))).toList(),
     );
@@ -155,10 +274,12 @@ class CfblogApi {
     int page = 1,
     int perPage = 12,
     String status = 'all',
+    bool refresh = false,
   }) async {
-    final result = await _request<List<WpPost>>(
+    final result = await _requestCached<List<WpPost>>(
       '/pages',
       query: {'page': page, 'per_page': perPage, 'status': status},
+      refresh: refresh,
       decoder: (json) =>
           _asList(json).map((entry) => WpPost.fromJson(_asMap(entry))).toList(),
     );
@@ -191,10 +312,12 @@ class CfblogApi {
     int page = 1,
     int perPage = 100,
     String search = '',
+    bool refresh = false,
   }) async {
-    final result = await _request<List<WpTerm>>(
+    final result = await _requestCached<List<WpTerm>>(
       '/categories',
       query: {'page': page, 'per_page': perPage, 'search': search},
+      refresh: refresh,
       decoder: (json) =>
           _asList(json).map((entry) => WpTerm.fromJson(_asMap(entry))).toList(),
     );
@@ -211,10 +334,12 @@ class CfblogApi {
     int page = 1,
     int perPage = 100,
     String search = '',
+    bool refresh = false,
   }) async {
-    final result = await _request<List<WpTerm>>(
+    final result = await _requestCached<List<WpTerm>>(
       '/tags',
       query: {'page': page, 'per_page': perPage, 'search': search},
+      refresh: refresh,
       decoder: (json) =>
           _asList(json).map((entry) => WpTerm.fromJson(_asMap(entry))).toList(),
     );
@@ -227,10 +352,10 @@ class CfblogApi {
     );
   }
 
-  Future<PostReferences> getPostReferences() async {
+  Future<PostReferences> getPostReferences({bool refresh = false}) async {
     final results = await Future.wait<PagedResponse<WpTerm>>([
-      listCategories(),
-      listTags(),
+      listCategories(refresh: refresh),
+      listTags(refresh: refresh),
     ]);
     return PostReferences(categories: results[0].items, tags: results[1].items);
   }
@@ -242,6 +367,7 @@ class CfblogApi {
       body: payload,
       decoder: (json) => WpTerm.fromJson(_asMap(json)),
     );
+    await _invalidateSessionCache();
     return result.data;
   }
 
@@ -252,6 +378,7 @@ class CfblogApi {
       body: payload,
       decoder: (json) => WpTerm.fromJson(_asMap(json)),
     );
+    await _invalidateSessionCache();
     return result.data;
   }
 
@@ -262,6 +389,7 @@ class CfblogApi {
       query: {'force': true},
       decoder: (json) => json,
     );
+    await _invalidateSessionCache();
   }
 
   Future<WpTerm> createTag(Map<String, dynamic> payload) async {
@@ -271,6 +399,7 @@ class CfblogApi {
       body: payload,
       decoder: (json) => WpTerm.fromJson(_asMap(json)),
     );
+    await _invalidateSessionCache();
     return result.data;
   }
 
@@ -281,6 +410,7 @@ class CfblogApi {
       body: payload,
       decoder: (json) => WpTerm.fromJson(_asMap(json)),
     );
+    await _invalidateSessionCache();
     return result.data;
   }
 
@@ -291,16 +421,19 @@ class CfblogApi {
       query: {'force': true},
       decoder: (json) => json,
     );
+    await _invalidateSessionCache();
   }
 
   Future<PagedResponse<WpLink>> listLinks({
     int page = 1,
     int perPage = 12,
     String visible = 'yes',
+    bool refresh = false,
   }) async {
-    final result = await _request<List<WpLink>>(
+    final result = await _requestCached<List<WpLink>>(
       '/links',
       query: {'page': page, 'per_page': perPage, 'visible': visible},
+      refresh: refresh,
       decoder: (json) =>
           _asList(json).map((entry) => WpLink.fromJson(_asMap(entry))).toList(),
     );
@@ -313,9 +446,10 @@ class CfblogApi {
     );
   }
 
-  Future<List<WpLinkCategory>> listLinkCategories() async {
-    final result = await _request<List<WpLinkCategory>>(
+  Future<List<WpLinkCategory>> listLinkCategories({bool refresh = false}) async {
+    final result = await _requestCached<List<WpLinkCategory>>(
       '/link-categories',
+      refresh: refresh,
       decoder: (json) => _asList(
         json,
       ).map((entry) => WpLinkCategory.fromJson(_asMap(entry))).toList(),
@@ -330,6 +464,7 @@ class CfblogApi {
       body: payload,
       decoder: (json) => WpLink.fromJson(_asMap(json)),
     );
+    await _invalidateSessionCache();
     return result.data;
   }
 
@@ -340,11 +475,13 @@ class CfblogApi {
       body: payload,
       decoder: (json) => WpLink.fromJson(_asMap(json)),
     );
+    await _invalidateSessionCache();
     return result.data;
   }
 
   Future<void> deleteLink(int id) async {
     await _request('/links/$id', method: 'DELETE', decoder: (json) => json);
+    await _invalidateSessionCache();
   }
 
   Future<WpLinkCategory> createLinkCategory(
@@ -356,6 +493,7 @@ class CfblogApi {
       body: payload,
       decoder: (json) => WpLinkCategory.fromJson(_asMap(json)),
     );
+    await _invalidateSessionCache();
     return result.data;
   }
 
@@ -369,6 +507,7 @@ class CfblogApi {
       body: payload,
       decoder: (json) => WpLinkCategory.fromJson(_asMap(json)),
     );
+    await _invalidateSessionCache();
     return result.data;
   }
 
@@ -378,6 +517,7 @@ class CfblogApi {
       method: 'DELETE',
       decoder: (json) => json,
     );
+    await _invalidateSessionCache();
   }
 
   Future<PagedResponse<SessionUser>> listUsers({
@@ -385,8 +525,9 @@ class CfblogApi {
     int perPage = 12,
     String search = '',
     String role = '',
+    bool refresh = false,
   }) async {
-    final result = await _request<List<SessionUser>>(
+    final result = await _requestCached<List<SessionUser>>(
       '/users',
       query: {
         'page': page,
@@ -394,6 +535,7 @@ class CfblogApi {
         'search': search,
         'role': role,
       },
+      refresh: refresh,
       decoder: (json) => _asList(
         json,
       ).map((entry) => SessionUser.fromJson(_asMap(entry))).toList(),
@@ -407,9 +549,13 @@ class CfblogApi {
     );
   }
 
-  Future<Map<String, String>> getSettings({bool admin = true}) async {
-    final result = await _request(
+  Future<Map<String, String>> getSettings({
+    bool admin = true,
+    bool refresh = false,
+  }) async {
+    final result = await _requestCached<Map<String, String>>(
       admin ? '/settings/admin' : '/settings',
+      refresh: refresh,
       decoder: (json) => _asMap(
         json,
       ).map((key, value) => MapEntry(key, value?.toString() ?? '')),
@@ -424,6 +570,7 @@ class CfblogApi {
       body: payload,
       decoder: (json) => json,
     );
+    await _invalidateSessionCache();
   }
 
   Future<SessionUser> createUser(Map<String, dynamic> payload) async {
@@ -433,6 +580,7 @@ class CfblogApi {
       body: payload,
       decoder: (json) => SessionUser.fromJson(_asMap(json)),
     );
+    await _invalidateSessionCache();
     return result.data;
   }
 
@@ -443,11 +591,13 @@ class CfblogApi {
       body: payload,
       decoder: (json) => SessionUser.fromJson(_asMap(json)),
     );
+    await _invalidateSessionCache();
     return result.data;
   }
 
   Future<void> deleteUser(int id) async {
     await _request('/users/$id', method: 'DELETE', decoder: (json) => json);
+    await _invalidateSessionCache();
   }
 
   Future<WpPost> createPost(Map<String, dynamic> payload) async {
@@ -457,6 +607,7 @@ class CfblogApi {
       body: payload,
       decoder: (json) => WpPost.fromJson(_asMap(json)),
     );
+    await _invalidateSessionCache();
     return result.data;
   }
 
@@ -467,6 +618,7 @@ class CfblogApi {
       body: payload,
       decoder: (json) => WpPost.fromJson(_asMap(json)),
     );
+    await _invalidateSessionCache();
     return result.data;
   }
 
@@ -477,6 +629,7 @@ class CfblogApi {
       body: payload,
       decoder: (json) => WpPost.fromJson(_asMap(json)),
     );
+    await _invalidateSessionCache();
     return result.data;
   }
 
@@ -487,20 +640,24 @@ class CfblogApi {
       body: payload,
       decoder: (json) => WpPost.fromJson(_asMap(json)),
     );
+    await _invalidateSessionCache();
     return result.data;
   }
 
   Future<void> deletePage(int id) async {
     await _request('/pages/$id', method: 'DELETE', decoder: (json) => json);
+    await _invalidateSessionCache();
   }
 
   Future<PagedResponse<WpMedia>> listMedia({
     int page = 1,
     int perPage = 12,
+    bool refresh = false,
   }) async {
-    final result = await _request<List<WpMedia>>(
+    final result = await _requestCached<List<WpMedia>>(
       '/media',
       query: {'page': page, 'per_page': perPage},
+      refresh: refresh,
       decoder: (json) => _asList(
         json,
       ).map((entry) => WpMedia.fromJson(_asMap(entry))).toList(),
@@ -521,6 +678,7 @@ class CfblogApi {
       body: payload,
       decoder: (json) => WpMedia.fromJson(_asMap(json)),
     );
+    await _invalidateSessionCache();
     return result.data;
   }
 
@@ -531,6 +689,7 @@ class CfblogApi {
       query: {'force': true},
       decoder: (json) => json,
     );
+    await _invalidateSessionCache();
   }
 
   Future<WpMedia> uploadMedia({
@@ -595,6 +754,7 @@ class CfblogApi {
       throw Exception(message);
     }
 
+    await _invalidateSessionCache();
     return WpMedia.fromJson(_asMap(payload));
   }
 
@@ -614,10 +774,12 @@ class CfblogApi {
     int page = 1,
     int perPage = 12,
     String status = 'all',
+    bool refresh = false,
   }) async {
-    final result = await _request<List<WpMoment>>(
+    final result = await _requestCached<List<WpMoment>>(
       '/moments',
       query: {'page': page, 'per_page': perPage, 'status': status},
+      refresh: refresh,
       decoder: (json) => _asList(
         json,
       ).map((entry) => WpMoment.fromJson(_asMap(entry))).toList(),
@@ -638,6 +800,7 @@ class CfblogApi {
       body: payload,
       decoder: (json) => WpMoment.fromJson(_asMap(json)),
     );
+    await _invalidateSessionCache();
     return result.data;
   }
 
@@ -648,21 +811,25 @@ class CfblogApi {
       body: payload,
       decoder: (json) => WpMoment.fromJson(_asMap(json)),
     );
+    await _invalidateSessionCache();
     return result.data;
   }
 
   Future<void> deleteMoment(int id) async {
     await _request('/moments/$id', method: 'DELETE', decoder: (json) => json);
+    await _invalidateSessionCache();
   }
 
   Future<PagedResponse<WpComment>> listComments({
     int page = 1,
     int perPage = 12,
     String status = 'all',
+    bool refresh = false,
   }) async {
-    final result = await _request<List<WpComment>>(
+    final result = await _requestCached<List<WpComment>>(
       '/comments',
       query: {'page': page, 'per_page': perPage, 'status': status},
+      refresh: refresh,
       decoder: (json) => _asList(
         json,
       ).map((entry) => WpComment.fromJson(_asMap(entry))).toList(),
@@ -680,10 +847,12 @@ class CfblogApi {
     int page = 1,
     int perPage = 12,
     String status = 'all',
+    bool refresh = false,
   }) async {
-    final result = await _request<List<WpComment>>(
+    final result = await _requestCached<List<WpComment>>(
       '/moments/comments/all',
       query: {'page': page, 'per_page': perPage, 'status': status},
+      refresh: refresh,
       decoder: (json) => _asList(
         json,
       ).map((entry) => WpComment.fromJson(_asMap(entry))).toList(),
@@ -704,6 +873,7 @@ class CfblogApi {
       body: payload,
       decoder: (json) => WpComment.fromJson(_asMap(json)),
     );
+    await _invalidateSessionCache();
     return result.data;
   }
 
@@ -714,11 +884,13 @@ class CfblogApi {
       body: payload,
       decoder: (json) => WpComment.fromJson(_asMap(json)),
     );
+    await _invalidateSessionCache();
     return result.data;
   }
 
   Future<void> deleteComment(int id) async {
     await _request('/comments/$id', method: 'DELETE', decoder: (json) => json);
+    await _invalidateSessionCache();
   }
 
   Future<WpComment> createMomentComment(
@@ -731,6 +903,7 @@ class CfblogApi {
       body: payload,
       decoder: (json) => WpComment.fromJson(_asMap(json)),
     );
+    await _invalidateSessionCache();
     return result.data;
   }
 
@@ -745,6 +918,7 @@ class CfblogApi {
       body: payload,
       decoder: (json) => WpComment.fromJson(_asMap(json)),
     );
+    await _invalidateSessionCache();
     return result.data;
   }
 
@@ -754,28 +928,49 @@ class CfblogApi {
       method: 'DELETE',
       decoder: (json) => json,
     );
+    await _invalidateSessionCache();
   }
 
-  Future<DashboardSnapshot> getDashboardSnapshot() async {
+  Future<DashboardSnapshot> getDashboardSnapshot({bool refresh = false}) async {
     final totals = await Future.wait<int>([
       _fetchTotal(
         '/posts',
         query: {'page': 1, 'per_page': 1, 'status': 'publish'},
+        refresh: refresh,
       ),
-      _fetchTotal('/pages', query: {'page': 1, 'per_page': 1, 'status': 'all'}),
+      _fetchTotal(
+        '/pages',
+        query: {'page': 1, 'per_page': 1, 'status': 'all'},
+        refresh: refresh,
+      ),
       _fetchTotal(
         '/moments',
         query: {'page': 1, 'per_page': 1, 'status': 'all'},
+        refresh: refresh,
       ),
       _fetchTotal(
         '/comments',
         query: {'page': 1, 'per_page': 1, 'status': 'all'},
+        refresh: refresh,
       ),
-      _fetchTotal('/media', query: {'page': 1, 'per_page': 1}),
-      _fetchTotal('/users', query: {'page': 1, 'per_page': 1}),
+      _fetchTotal(
+        '/media',
+        query: {'page': 1, 'per_page': 1},
+        refresh: refresh,
+      ),
+      _fetchTotal(
+        '/users',
+        query: {'page': 1, 'per_page': 1},
+        refresh: refresh,
+      ),
     ]);
 
-    final recentPosts = await listPosts(page: 1, perPage: 4, status: 'publish');
+    final recentPosts = await listPosts(
+      page: 1,
+      perPage: 4,
+      status: 'publish',
+      refresh: refresh,
+    );
 
     return DashboardSnapshot(
       posts: totals[0],
@@ -788,10 +983,15 @@ class CfblogApi {
     );
   }
 
-  Future<int> _fetchTotal(String path, {Map<String, dynamic>? query}) async {
-    final result = await _request<List<Object?>>(
+  Future<int> _fetchTotal(
+    String path, {
+    Map<String, dynamic>? query,
+    bool refresh = false,
+  }) async {
+    final result = await _requestCached<List<Object?>>(
       path,
       query: query,
+      refresh: refresh,
       decoder: (json) => _asList(json),
     );
     return int.tryParse(result.headers['x-wp-total'] ?? '') ??
@@ -800,10 +1000,15 @@ class CfblogApi {
 }
 
 class _ApiResponse<T> {
-  const _ApiResponse({required this.data, required this.headers});
+  const _ApiResponse({
+    required this.data,
+    required this.headers,
+    required this.rawBody,
+  });
 
   final T data;
   final Map<String, String> headers;
+  final String rawBody;
 }
 
 Map<String, dynamic> _asMap(Object? value) {

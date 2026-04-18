@@ -48,13 +48,17 @@ class _MediaScreenState extends State<MediaScreen> {
     super.dispose();
   }
 
-  Future<void> _loadMedia() async {
+  Future<void> _loadMedia({bool refresh = false}) async {
     setState(() {
       _loading = true;
       _message = null;
     });
     try {
-      final result = await widget.api.listMedia(page: _page, perPage: 12);
+      final result = await widget.api.listMedia(
+        page: _page,
+        perPage: 12,
+        refresh: refresh,
+      );
       if (!mounted) {
         return;
       }
@@ -238,7 +242,7 @@ class _MediaScreenState extends State<MediaScreen> {
     );
 
     return RefreshIndicator(
-      onRefresh: _loadMedia,
+      onRefresh: () => _loadMedia(refresh: true),
       child: ListView(
         padding: pageContentPadding(context),
         children: [
@@ -252,7 +256,7 @@ class _MediaScreenState extends State<MediaScreen> {
                   runSpacing: 8,
                   children: [
                     FilledButton.tonalIcon(
-                      onPressed: _loadMedia,
+                      onPressed: () => _loadMedia(refresh: true),
                       style: toolbarButtonStyle,
                       icon: const Icon(Icons.refresh_rounded),
                       label: const Text('刷新'),

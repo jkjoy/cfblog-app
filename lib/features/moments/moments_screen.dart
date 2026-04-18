@@ -45,7 +45,7 @@ class _MomentsScreenState extends State<MomentsScreen> {
     _loadMoments();
   }
 
-  Future<void> _loadMoments() async {
+  Future<void> _loadMoments({bool refresh = false}) async {
     setState(() {
       _loading = true;
       _message = null;
@@ -55,6 +55,7 @@ class _MomentsScreenState extends State<MomentsScreen> {
         page: _page,
         perPage: 12,
         status: _status,
+        refresh: refresh,
       );
       if (!mounted) {
         return;
@@ -154,7 +155,7 @@ class _MomentsScreenState extends State<MomentsScreen> {
     );
 
     return RefreshIndicator(
-      onRefresh: _loadMoments,
+      onRefresh: () => _loadMoments(refresh: true),
       child: ListView(
         padding: pageContentPadding(context),
         children: [
@@ -168,7 +169,7 @@ class _MomentsScreenState extends State<MomentsScreen> {
                   runSpacing: 8,
                   children: [
                     FilledButton.tonalIcon(
-                      onPressed: _loadMoments,
+                      onPressed: () => _loadMoments(refresh: true),
                       style: toolbarButtonStyle,
                       icon: const Icon(Icons.refresh_rounded),
                       label: const Text('刷新'),
@@ -386,6 +387,55 @@ class _MomentEditorSheetState extends State<_MomentEditorSheet> {
     super.dispose();
   }
 
+  Future<void> _insertFromMediaLibrary({required bool intoContent}) async {
+    final media = await showModalBottomSheet<WpMedia>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => _MomentMediaPickerSheet(api: widget.api),
+    );
+
+    if (media == null || !mounted) {
+      return;
+    }
+
+    final title = stripHtml(media.title).isEmpty ? '媒体文件' : stripHtml(media.title);
+    final alt = media.altText.isEmpty ? title : media.altText;
+
+    if (intoContent) {
+      final snippet = media.isImage
+          ? '\n![$alt](${media.sourceUrl})\n'
+          : '\n[$title](${media.sourceUrl})\n';
+      _insertContentSnippet(snippet);
+    } else {
+      final current = _mediaUrlsController.text.trim();
+      _mediaUrlsController.text = current.isEmpty
+          ? media.sourceUrl
+          : '$current\n${media.sourceUrl}';
+    }
+
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(intoContent ? '媒体已插入内容' : '媒体地址已加入列表')));
+  }
+
+  void _insertContentSnippet(String snippet) {
+    final value = _contentController.value;
+    final selection = value.selection;
+    final start = selection.isValid ? selection.start : value.text.length;
+    final end = selection.isValid ? selection.end : value.text.length;
+    final safeStart = start < 0 ? value.text.length : start;
+    final safeEnd = end < 0 ? value.text.length : end;
+    final nextText = value.text.replaceRange(safeStart, safeEnd, snippet);
+    final caretOffset = safeStart + snippet.length;
+
+    _contentController.value = value.copyWith(
+      text: nextText,
+      selection: TextSelection.collapsed(offset: caretOffset),
+      composing: TextRange.empty,
+    );
+  }
+
   Future<void> _save() async {
     if (_contentController.text.trim().isEmpty) {
       setState(() {
@@ -438,6 +488,8 @@ class _MomentEditorSheetState extends State<_MomentEditorSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final compact = isCompactLayout(context);
+
     return Padding(
       padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
       child: Container(
@@ -478,23 +530,51 @@ class _MomentEditorSheetState extends State<_MomentEditorSheet> {
                     }).toList(),
                   ),
                   const SizedBox(height: 16),
+                  Text(
+                    '内容',
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  SizedBox(height: compact ? 8 : 10),
                   TextField(
                     controller: _contentController,
                     minLines: 5,
                     maxLines: 8,
                     decoration: const InputDecoration(
-                      labelText: '内容',
                       alignLabelWithHint: true,
+                      hintText: '输入动态内容，也可以直接插入媒体链接。',
                     ),
                   ),
                   const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          '媒体 URL',
+                          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ),
+                      FilledButton.tonalIcon(
+                        onPressed: () => _insertFromMediaLibrary(intoContent: false),
+                        icon: const Icon(Icons.photo_library_rounded),
+                        label: const Text('从媒体库添加'),
+                        style: FilledButton.styleFrom(
+                          visualDensity: VisualDensity.compact,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: compact ? 8 : 10),
                   TextField(
                     controller: _mediaUrlsController,
                     minLines: 3,
                     maxLines: 6,
                     decoration: const InputDecoration(
-                      labelText: '媒体 URL',
-                      hintText: '每行一个 URL，可直接引用 R2 地址。',
+                      hintText: '每行一个 URL，可直接引用媒体库文件地址。',
                       alignLabelWithHint: true,
                     ),
                   ),
@@ -530,6 +610,275 @@ class _MomentEditorSheetState extends State<_MomentEditorSheet> {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _MomentMediaPickerSheet extends StatefulWidget {
+  const _MomentMediaPickerSheet({required this.api});
+
+  final CfblogApi api;
+
+  @override
+  State<_MomentMediaPickerSheet> createState() => _MomentMediaPickerSheetState();
+}
+
+class _MomentMediaPickerSheetState extends State<_MomentMediaPickerSheet> {
+  bool _loading = true;
+  String? _error;
+  List<WpMedia> _items = const [];
+  int _page = 1;
+  int _totalPages = 1;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadMedia();
+  }
+
+  Future<void> _loadMedia({bool refresh = false}) async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+
+    try {
+      final result = await widget.api.listMedia(
+        page: _page,
+        perPage: 24,
+        refresh: refresh,
+      );
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _items = result.items;
+        _totalPages = result.totalPages;
+      });
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _error = error.toString().replaceFirst('Exception: ', '');
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _loading = false;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final compact = isCompactLayout(context);
+    final theme = Theme.of(context);
+
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(10, 24, 10, 10),
+        child: SurfaceCard(
+          padding: EdgeInsets.fromLTRB(
+            compact ? 12 : 14,
+            compact ? 10 : 12,
+            compact ? 12 : 14,
+            compact ? 12 : 14,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 42,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: AppTheme.border,
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      '媒体库',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                  FilledButton.tonalIcon(
+                    onPressed: () => _loadMedia(refresh: true),
+                    icon: const Icon(Icons.refresh_rounded),
+                    label: const Text('刷新'),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Text(
+                '选择一张图片或文件，插入动态内容或媒体列表。',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: AppTheme.textMuted,
+                ),
+              ),
+              const SizedBox(height: 12),
+              ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxHeight: MediaQuery.sizeOf(context).height * 0.62,
+                ),
+                child: _loading
+                    ? const BootPanel(
+                        title: '正在加载媒体',
+                        subtitle: '同步媒体库内容。',
+                      )
+                    : _error != null
+                    ? InfoBanner(message: _error!, isError: true)
+                    : _items.isEmpty
+                    ? const EmptyStateCard(
+                        title: '媒体库为空',
+                        subtitle: '先上传图片或文件，再回来插入动态。',
+                      )
+                    : Column(
+                        children: [
+                          Expanded(
+                            child: ListView.separated(
+                              shrinkWrap: true,
+                              itemCount: _items.length,
+                              separatorBuilder: (_, _) =>
+                                  const SizedBox(height: 8),
+                              itemBuilder: (context, index) {
+                                final item = _items[index];
+                                return _MomentMediaRow(
+                                  item: item,
+                                  onTap: () => Navigator.of(context).pop(item),
+                                );
+                              },
+                            ),
+                          ),
+                          if (_totalPages > 1) ...[
+                            const SizedBox(height: 10),
+                            PaginationCard(
+                              currentPage: _page,
+                              totalPages: _totalPages,
+                              onPrevious: () {
+                                setState(() {
+                                  _page -= 1;
+                                });
+                                _loadMedia();
+                              },
+                              onNext: () {
+                                setState(() {
+                                  _page += 1;
+                                });
+                                _loadMedia();
+                              },
+                            ),
+                          ],
+                        ],
+                      ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _MomentMediaRow extends StatelessWidget {
+  const _MomentMediaRow({required this.item, required this.onTap});
+
+  final WpMedia item;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final compact = isCompactLayout(context);
+    final title = stripHtml(item.title).isEmpty ? item.slug : stripHtml(item.title);
+    return SurfaceCard(
+      padding: EdgeInsets.symmetric(
+        horizontal: compact ? 12 : 14,
+        vertical: compact ? 10 : 12,
+      ),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(24),
+        child: Row(
+          children: [
+            _MomentMediaPreview(item: item),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                title.isEmpty ? '未命名媒体' : title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Text(
+              formatCompactDate(item.modified.isEmpty ? item.date : item.modified),
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: AppTheme.textMuted),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _MomentMediaPreview extends StatelessWidget {
+  const _MomentMediaPreview({required this.item});
+
+  final WpMedia item;
+
+  @override
+  Widget build(BuildContext context) {
+    final preview = item.isImage
+        ? ClipRRect(
+            borderRadius: BorderRadius.circular(14),
+            child: Image.network(
+              item.sourceUrl,
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) =>
+                  const _MomentMediaFallback(),
+            ),
+          )
+        : const _MomentMediaFallback();
+
+    return Container(
+      width: 42,
+      height: 42,
+      decoration: BoxDecoration(
+        color: AppTheme.surfaceMuted,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppTheme.border),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: preview,
+    );
+  }
+}
+
+class _MomentMediaFallback extends StatelessWidget {
+  const _MomentMediaFallback();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Center(
+      child: Icon(
+        Icons.insert_drive_file_rounded,
+        size: 20,
+        color: AppTheme.textMuted,
       ),
     );
   }

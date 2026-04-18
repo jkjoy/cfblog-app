@@ -7,6 +7,18 @@ import 'post_editor_screen.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/app_chrome.dart';
 
+Future<bool?> openPostEditorScreen(
+  BuildContext context, {
+  required CfblogApi api,
+  int? postId,
+}) {
+  return Navigator.of(context).push<bool>(
+    MaterialPageRoute(
+      builder: (context) => PostEditorScreen(api: api, postId: postId),
+    ),
+  );
+}
+
 class PostsScreen extends StatefulWidget {
   const PostsScreen({super.key, required this.api});
 
@@ -46,7 +58,7 @@ class _PostsScreenState extends State<PostsScreen> {
     super.dispose();
   }
 
-  Future<void> _loadPosts() async {
+  Future<void> _loadPosts({bool refresh = false}) async {
     setState(() {
       _loading = true;
       _error = null;
@@ -57,6 +69,7 @@ class _PostsScreenState extends State<PostsScreen> {
         perPage: 12,
         search: _search,
         status: _status,
+        refresh: refresh,
       );
       if (!mounted) {
         return;
@@ -90,10 +103,10 @@ class _PostsScreenState extends State<PostsScreen> {
   }
 
   Future<void> _openEditor({int? postId}) async {
-    final changed = await Navigator.of(context).push<bool>(
-      MaterialPageRoute(
-        builder: (context) => PostEditorScreen(api: widget.api, postId: postId),
-      ),
+    final changed = await openPostEditorScreen(
+      context,
+      api: widget.api,
+      postId: postId,
     );
 
     if (changed == true && mounted) {
@@ -118,7 +131,7 @@ class _PostsScreenState extends State<PostsScreen> {
     );
 
     return RefreshIndicator(
-      onRefresh: _loadPosts,
+      onRefresh: () => _loadPosts(refresh: true),
       child: ListView(
         padding: pageContentPadding(context),
         children: [
@@ -157,7 +170,7 @@ class _PostsScreenState extends State<PostsScreen> {
                             runSpacing: 8,
                             children: [
                               FilledButton.tonalIcon(
-                                onPressed: _loadPosts,
+                                onPressed: () => _loadPosts(refresh: true),
                                 style: toolbarButtonStyle,
                                 icon: const Icon(Icons.refresh_rounded),
                                 label: const Text('刷新'),
@@ -179,7 +192,7 @@ class _PostsScreenState extends State<PostsScreen> {
                         Expanded(child: searchField),
                         const SizedBox(width: 10),
                         FilledButton.tonalIcon(
-                          onPressed: _loadPosts,
+                          onPressed: () => _loadPosts(refresh: true),
                           style: toolbarButtonStyle,
                           icon: const Icon(Icons.refresh_rounded),
                           label: const Text('刷新'),

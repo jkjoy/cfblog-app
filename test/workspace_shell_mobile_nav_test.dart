@@ -92,7 +92,8 @@ void main() {
 
     expect(find.text('CFBlog Site'), findsOneWidget);
     expect(find.text('评论'), findsWidgets);
-    expect(find.text('撰写'), findsOneWidget);
+    expect(find.byIcon(Icons.edit_note_rounded), findsOneWidget);
+    expect(find.byIcon(Icons.bolt_rounded), findsWidgets);
 
     await tester.tap(find.byTooltip('站点信息'));
     await tester.pumpAndSettle();

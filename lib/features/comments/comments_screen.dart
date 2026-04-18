@@ -41,7 +41,7 @@ class _CommentsScreenState extends State<CommentsScreen> {
     _loadComments();
   }
 
-  Future<void> _loadComments() async {
+  Future<void> _loadComments({bool refresh = false}) async {
     setState(() {
       _loading = true;
       _message = null;
@@ -52,11 +52,13 @@ class _CommentsScreenState extends State<CommentsScreen> {
               page: _page,
               perPage: 12,
               status: _status,
+              refresh: refresh,
             )
           : await widget.api.listMomentComments(
               page: _page,
               perPage: 12,
               status: _status,
+              refresh: refresh,
             );
 
       if (!mounted) {
@@ -189,7 +191,7 @@ class _CommentsScreenState extends State<CommentsScreen> {
     );
 
     return RefreshIndicator(
-      onRefresh: _loadComments,
+      onRefresh: () => _loadComments(refresh: true),
       child: ListView(
         padding: pageContentPadding(context),
         children: [
@@ -203,7 +205,7 @@ class _CommentsScreenState extends State<CommentsScreen> {
                   runSpacing: 8,
                   children: [
                     FilledButton.tonalIcon(
-                      onPressed: _loadComments,
+                      onPressed: () => _loadComments(refresh: true),
                       style: toolbarButtonStyle,
                       icon: const Icon(Icons.refresh_rounded),
                       label: const Text('刷新'),

@@ -77,15 +77,15 @@ class _SystemWorkspaceScreenState extends State<SystemWorkspaceScreen> {
     super.dispose();
   }
 
-  Future<void> _loadCurrent() async {
+  Future<void> _loadCurrent({bool refresh = false}) async {
     if (_isUsers) {
-      await _loadUsers();
+      await _loadUsers(refresh: refresh);
     } else {
-      await _loadSettings();
+      await _loadSettings(refresh: refresh);
     }
   }
 
-  Future<void> _loadUsers() async {
+  Future<void> _loadUsers({bool refresh = false}) async {
     setState(() {
       _loading = true;
       _message = null;
@@ -97,6 +97,7 @@ class _SystemWorkspaceScreenState extends State<SystemWorkspaceScreen> {
         perPage: 12,
         search: _search,
         role: _role,
+        refresh: refresh,
       );
       if (!mounted) {
         return;
@@ -123,14 +124,17 @@ class _SystemWorkspaceScreenState extends State<SystemWorkspaceScreen> {
     }
   }
 
-  Future<void> _loadSettings() async {
+  Future<void> _loadSettings({bool refresh = false}) async {
     setState(() {
       _loading = true;
       _message = null;
     });
 
     try {
-      final data = await widget.api.getSettings(admin: _isAdmin);
+      final data = await widget.api.getSettings(
+        admin: _isAdmin,
+        refresh: refresh,
+      );
       for (final section in _settingsSections) {
         for (final field in section.fields) {
           if (field.type == _SettingFieldType.toggle) {
@@ -330,7 +334,7 @@ class _SystemWorkspaceScreenState extends State<SystemWorkspaceScreen> {
     );
 
     return RefreshIndicator(
-      onRefresh: _loadCurrent,
+      onRefresh: () => _loadCurrent(refresh: true),
       child: ListView(
         padding: pageContentPadding(context),
         children: [
@@ -344,7 +348,7 @@ class _SystemWorkspaceScreenState extends State<SystemWorkspaceScreen> {
                   runSpacing: 8,
                   children: [
                     FilledButton.tonalIcon(
-                      onPressed: _loadCurrent,
+                      onPressed: () => _loadCurrent(refresh: true),
                       style: toolbarButtonStyle,
                       icon: const Icon(Icons.refresh_rounded),
                       label: const Text('刷新'),
