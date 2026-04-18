@@ -87,7 +87,7 @@ class _CommentsScreenState extends State<CommentsScreen> {
     }
   }
 
-  Future<void> _openEditor({WpComment? comment}) async {
+  Future<void> _openEditor({required WpComment comment}) async {
     final changed = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
@@ -99,9 +99,26 @@ class _CommentsScreenState extends State<CommentsScreen> {
     if (changed == true && mounted) {
       final messenger = ScaffoldMessenger.of(context);
       await _loadComments();
-      messenger.showSnackBar(
-        SnackBar(content: Text(comment == null ? '评论已创建' : '评论已更新')),
-      );
+      messenger.showSnackBar(const SnackBar(content: Text('评论已更新')));
+    }
+  }
+
+  Future<void> _openReplySheet(WpComment comment) async {
+    final changed = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => _CommentReplySheet(
+        api: widget.api,
+        scope: _scope,
+        comment: comment,
+      ),
+    );
+
+    if (changed == true && mounted) {
+      final messenger = ScaffoldMessenger.of(context);
+      await _loadComments(refresh: true);
+      messenger.showSnackBar(const SnackBar(content: Text('回复已发送')));
     }
   }
 
@@ -210,12 +227,6 @@ class _CommentsScreenState extends State<CommentsScreen> {
                       icon: const Icon(Icons.refresh_rounded),
                       label: const Text('刷新'),
                     ),
-                    FilledButton.icon(
-                      onPressed: () => _openEditor(),
-                      style: toolbarButtonStyle,
-                      icon: const Icon(Icons.add_comment_rounded),
-                      label: Text(isPost ? '补录评论' : '补录动态评论'),
-                    ),
                   ],
                 ),
                 SizedBox(height: compact ? 10 : 12),
@@ -264,7 +275,7 @@ class _CommentsScreenState extends State<CommentsScreen> {
           else if (_items.isEmpty)
             EmptyStateCard(
               title: isPost ? '当前没有文章评论' : '当前没有动态评论',
-              subtitle: '可以切换状态筛选，或者手动补录一条评论。',
+              subtitle: '可以切换状态筛选，等待用户留言后再处理。',
             )
           else
             ..._items.map(
@@ -273,6 +284,7 @@ class _CommentsScreenState extends State<CommentsScreen> {
                 child: _CommentCard(
                   comment: item,
                   scope: _scope,
+                  onReply: () => _openReplySheet(item),
                   onEdit: () => _openEditor(comment: item),
                   onDelete: () => _delete(item),
                   onApprove: () => _changeStatus(item, 'approved'),
@@ -307,6 +319,7 @@ class _CommentCard extends StatelessWidget {
   const _CommentCard({
     required this.comment,
     required this.scope,
+    required this.onReply,
     required this.onEdit,
     required this.onDelete,
     required this.onApprove,
@@ -315,6 +328,7 @@ class _CommentCard extends StatelessWidget {
 
   final WpComment comment;
   final CommentScope scope;
+  final VoidCallback onReply;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
   final VoidCallback onApprove;
@@ -353,6 +367,12 @@ class _CommentCard extends StatelessWidget {
                 onPressed: onPending,
                 tooltip: '标记待审',
                 icon: const Icon(Icons.schedule_rounded),
+                visualDensity: VisualDensity.compact,
+              ),
+              IconButton(
+                onPressed: onReply,
+                tooltip: '回复评论',
+                icon: const Icon(Icons.reply_rounded),
                 visualDensity: VisualDensity.compact,
               ),
               IconButton(
@@ -697,6 +717,192 @@ class _CommentEditorSheetState extends State<_CommentEditorSheet> {
                               )
                             : const Icon(Icons.save_rounded),
                         label: Text(_saving ? '保存中...' : '保存'),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CommentReplySheet extends StatefulWidget {
+  const _CommentReplySheet({
+    required this.api,
+    required this.scope,
+    required this.comment,
+  });
+
+  final CfblogApi api;
+  final CommentScope scope;
+  final WpComment comment;
+
+  @override
+  State<_CommentReplySheet> createState() => _CommentReplySheetState();
+}
+
+class _CommentReplySheetState extends State<_CommentReplySheet> {
+  late final TextEditingController _contentController;
+  bool _saving = false;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _contentController = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _contentController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _save() async {
+    if (_contentController.text.trim().isEmpty) {
+      setState(() {
+        _error = '回复内容不能为空';
+      });
+      return;
+    }
+
+    final comment = widget.comment;
+    final payload = <String, dynamic>{
+      'parent': comment.id,
+      'status': 'approved',
+      'content': _contentController.text.trim(),
+      if (widget.scope == CommentScope.post) 'post': comment.post,
+      if (widget.scope == CommentScope.moment) 'moment': comment.moment,
+    };
+
+    setState(() {
+      _saving = true;
+      _error = null;
+    });
+
+    try {
+      if (widget.scope == CommentScope.post) {
+        await widget.api.createComment(payload);
+      } else {
+        await widget.api.createMomentComment(comment.moment, payload);
+      }
+
+      if (!mounted) {
+        return;
+      }
+      Navigator.of(context).pop(true);
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _error = error.toString().replaceFirst('Exception: ', '');
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _saving = false;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final targetLabel = widget.scope == CommentScope.post
+        ? (widget.comment.postTitle.isEmpty
+              ? '文章 #${widget.comment.post == 0 ? '-' : widget.comment.post}'
+              : widget.comment.postTitle)
+        : '动态 #${widget.comment.moment == 0 ? '-' : widget.comment.moment}';
+    final originalAuthor = widget.comment.authorName.isEmpty
+        ? '匿名用户'
+        : widget.comment.authorName;
+    final originalContent = stripHtml(widget.comment.content);
+
+    return Padding(
+      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
+      child: Container(
+        decoration: const BoxDecoration(
+          color: AppTheme.surface,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
+        ),
+        child: SafeArea(
+          top: false,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SectionHeading(
+                    title: '快速回复',
+                    subtitle: '直接回复当前评论，默认作为已通过评论提交。',
+                  ),
+                  const SizedBox(height: 18),
+                  SurfaceCard(
+                    padding: const EdgeInsets.all(14),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '$originalAuthor · $targetLabel',
+                          style: Theme.of(context).textTheme.titleSmall
+                              ?.copyWith(fontWeight: FontWeight.w800),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          originalContent.isEmpty ? '原评论为空' : originalContent,
+                          maxLines: 4,
+                          overflow: TextOverflow.ellipsis,
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: AppTheme.textMuted,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  if (_error != null) ...[
+                    InfoBanner(message: _error!, isError: true),
+                    const SizedBox(height: 16),
+                  ],
+                  TextField(
+                    controller: _contentController,
+                    minLines: 4,
+                    maxLines: 8,
+                    decoration: const InputDecoration(
+                      labelText: '回复内容',
+                      alignLabelWithHint: true,
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  Wrap(
+                    spacing: 12,
+                    runSpacing: 12,
+                    children: [
+                      OutlinedButton(
+                        onPressed: _saving
+                            ? null
+                            : () => Navigator.of(context).pop(false),
+                        child: const Text('取消'),
+                      ),
+                      FilledButton.icon(
+                        onPressed: _saving ? null : _save,
+                        icon: _saving
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : const Icon(Icons.reply_rounded),
+                        label: Text(_saving ? '发送中...' : '发送回复'),
                       ),
                     ],
                   ),
