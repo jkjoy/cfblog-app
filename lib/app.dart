@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
+import 'core/app_permissions.dart';
 import 'core/cfblog_api.dart';
 import 'core/formatters.dart';
 import 'core/models.dart';
@@ -50,6 +51,7 @@ class _AppBootstrapperState extends State<_AppBootstrapper> {
   @override
   void initState() {
     super.initState();
+    AppPermissions.requestStartupPermissions();
     _bootstrap();
   }
 

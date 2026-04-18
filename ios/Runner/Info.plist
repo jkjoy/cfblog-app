@@ -45,5 +45,11 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>用于获取设备位置信息，支持定位相关能力与网络环境判断。</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>用于访问系统相册，方便选择图片或视频上传到媒体库。</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>用于将图片或视频写入系统相册时获取授权。</string>
 </dict>
 </plist>
