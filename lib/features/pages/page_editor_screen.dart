@@ -188,11 +188,12 @@ class _PageEditorScreenState extends State<PageEditorScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          SectionHeading(
-                            title: title,
-                            subtitle: '固定页面更强调结构清晰和长期可维护性，先处理层级和评论开关。',
+                          Text(
+                            '发布状态',
+                            style: Theme.of(context).textTheme.titleMedium
+                                ?.copyWith(fontWeight: FontWeight.w800),
                           ),
-                          SizedBox(height: compact ? 12 : 18),
+                          SizedBox(height: compact ? 10 : 12),
                           if (_error != null) ...[
                             InfoBanner(message: _error!, isError: true),
                             SizedBox(height: compact ? 12 : 16),
@@ -218,7 +219,7 @@ class _PageEditorScreenState extends State<PageEditorScreen> {
                               );
                             }).toList(),
                           ),
-                          SizedBox(height: compact ? 12 : 18),
+                          SizedBox(height: compact ? 10 : 12),
                           LayoutBuilder(
                             builder: (context, constraints) {
                               final stacked = constraints.maxWidth < 720;
@@ -317,8 +318,8 @@ class _PageEditorScreenState extends State<PageEditorScreen> {
                           SizedBox(height: compact ? 10 : 14),
                           TextField(
                             controller: _excerptController,
-                            minLines: compact ? 2 : 3,
-                            maxLines: compact ? 4 : 5,
+                            minLines: 2,
+                            maxLines: compact ? 3 : 4,
                             decoration: const InputDecoration(
                               labelText: '摘要',
                               hintText: '适合 About、归档和说明性页面的简短导语。',
@@ -327,8 +328,8 @@ class _PageEditorScreenState extends State<PageEditorScreen> {
                           SizedBox(height: compact ? 10 : 14),
                           TextField(
                             controller: _contentController,
-                            minLines: compact ? 8 : 12,
-                            maxLines: compact ? 14 : 20,
+                            minLines: compact ? 7 : 10,
+                            maxLines: compact ? 12 : 16,
                             decoration: const InputDecoration(
                               labelText: '正文',
                               alignLabelWithHint: true,

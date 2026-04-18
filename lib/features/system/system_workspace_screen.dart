@@ -550,23 +550,37 @@ class _SystemWorkspaceScreenState extends State<SystemWorkspaceScreen> {
   }
 
   List<Widget> _buildSettingsContent(BuildContext context) {
+    final compact = isCompactLayout(context);
     return _settingsSections
         .map(
           (section) => Padding(
-            padding: const EdgeInsets.only(bottom: 14),
+            padding: EdgeInsets.only(bottom: compact ? 10 : 14),
             child: SurfaceCard(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  SectionHeading(
-                    title: section.title,
-                    subtitle: section.subtitle,
+                  Text(
+                    section.title,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
-                  const SizedBox(height: 18),
+                  if (section.subtitle.isNotEmpty) ...[
+                    SizedBox(height: compact ? 4 : 6),
+                    Text(
+                      section.subtitle,
+                      maxLines: compact ? 2 : null,
+                      overflow: compact ? TextOverflow.ellipsis : null,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: AppTheme.textMuted,
+                      ),
+                    ),
+                  ],
+                  SizedBox(height: compact ? 12 : 16),
                   ...section.fields.expand((field) {
                     return [
                       _buildSettingField(field),
-                      const SizedBox(height: 14),
+                      SizedBox(height: compact ? 10 : 14),
                     ];
                   }).toList()..removeLast(),
                 ],
@@ -578,12 +592,13 @@ class _SystemWorkspaceScreenState extends State<SystemWorkspaceScreen> {
   }
 
   Widget _buildSettingField(_SettingField field) {
+    final compact = isCompactLayout(context);
     if (field.type == _SettingFieldType.toggle) {
       return Container(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(compact ? 12 : 16),
         decoration: BoxDecoration(
           color: AppTheme.surfaceMuted,
-          borderRadius: BorderRadius.circular(22),
+          borderRadius: BorderRadius.circular(compact ? 18 : 22),
           border: Border.all(color: AppTheme.border),
         ),
         child: Row(
@@ -597,9 +612,11 @@ class _SystemWorkspaceScreenState extends State<SystemWorkspaceScreen> {
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
                   if (field.helper.isNotEmpty) ...[
-                    const SizedBox(height: 6),
+                    SizedBox(height: compact ? 4 : 6),
                     Text(
                       field.helper,
+                      maxLines: compact ? 2 : 3,
+                      overflow: compact ? TextOverflow.ellipsis : null,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: AppTheme.textMuted,
                       ),
@@ -639,9 +656,10 @@ class _SystemWorkspaceScreenState extends State<SystemWorkspaceScreen> {
       keyboardType: keyboardType,
       obscureText: obscureText,
       enabled: _isAdmin,
-      minLines: multiline ? 3 : 1,
-      maxLines: multiline ? 6 : 1,
+      minLines: multiline ? 2 : 1,
+      maxLines: multiline ? 4 : 1,
       decoration: InputDecoration(
+        isDense: true,
         labelText: field.label,
         helperText: field.helper.isEmpty ? null : field.helper,
         alignLabelWithHint: multiline,

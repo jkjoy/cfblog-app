@@ -9,7 +9,7 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 
 void main() {
-  testWidgets('mobile workspace navigation uses bottom bar and more sheet', (
+  testWidgets('mobile workspace navigation uses bottom bar and workspace sheet', (
     tester,
   ) async {
     tester.view.physicalSize = const Size(390, 844);
@@ -92,7 +92,7 @@ void main() {
 
     expect(find.text('CFBlog Site'), findsOneWidget);
     expect(find.text('评论'), findsWidgets);
-    expect(find.text('更多'), findsOneWidget);
+    expect(find.text('撰写'), findsOneWidget);
 
     await tester.tap(find.byTooltip('站点信息'));
     await tester.pumpAndSettle();

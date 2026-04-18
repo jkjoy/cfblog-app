@@ -238,13 +238,12 @@ class _PostEditorScreenState extends State<PostEditorScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            SectionHeading(
-                              title: title,
-                              subtitle: widget.isEditing
-                                  ? '在同一页处理标题、摘要、正文和发布状态，减少来回切换。'
-                                  : '先写核心内容，再逐步补充分类、标签和封面信息。',
+                            Text(
+                              '发布状态',
+                              style: Theme.of(context).textTheme.titleMedium
+                                  ?.copyWith(fontWeight: FontWeight.w800),
                             ),
-                            SizedBox(height: compact ? 12 : 18),
+                            SizedBox(height: compact ? 10 : 12),
                             Wrap(
                               spacing: compact ? 8 : 10,
                               runSpacing: compact ? 8 : 10,
@@ -266,13 +265,13 @@ class _PostEditorScreenState extends State<PostEditorScreen> {
                                 );
                               }).toList(),
                             ),
-                            SizedBox(height: compact ? 12 : 18),
+                            SizedBox(height: compact ? 10 : 12),
                             Container(
-                              padding: EdgeInsets.all(compact ? 12 : 16),
+                              padding: EdgeInsets.all(compact ? 10 : 12),
                               decoration: BoxDecoration(
                                 color: AppTheme.surfaceMuted,
                                 borderRadius: BorderRadius.circular(
-                                  compact ? 18 : 22,
+                                  compact ? 16 : 18,
                                 ),
                                 border: Border.all(color: AppTheme.border),
                               ),
@@ -293,14 +292,12 @@ class _PostEditorScreenState extends State<PostEditorScreen> {
                                         ),
                                         SizedBox(height: compact ? 4 : 6),
                                         Text(
-                                          '打开后会优先展示在前台内容流中，适合公告或重点文章。',
+                                          '优先展示在前台内容流。',
                                           style: Theme.of(
                                             context,
                                           ).textTheme.bodySmall,
-                                          maxLines: compact ? 2 : null,
-                                          overflow: compact
-                                              ? TextOverflow.ellipsis
-                                              : null,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
                                         ),
                                       ],
                                     ),
@@ -332,11 +329,12 @@ class _PostEditorScreenState extends State<PostEditorScreen> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  const SectionHeading(
-                                    title: '内容主区',
-                                    subtitle: '先把标题、摘要和正文写完整，这部分决定文章质量。',
+                                  Text(
+                                    '内容主区',
+                                    style: Theme.of(context).textTheme.titleMedium
+                                        ?.copyWith(fontWeight: FontWeight.w800),
                                   ),
-                                  SizedBox(height: compact ? 12 : 18),
+                                  SizedBox(height: compact ? 10 : 12),
                                   TextFormField(
                                     controller: _titleController,
                                     decoration: const InputDecoration(
@@ -352,8 +350,8 @@ class _PostEditorScreenState extends State<PostEditorScreen> {
                                   SizedBox(height: compact ? 10 : 14),
                                   TextFormField(
                                     controller: _excerptController,
-                                    minLines: compact ? 2 : 3,
-                                    maxLines: compact ? 4 : 5,
+                                    minLines: 2,
+                                    maxLines: compact ? 3 : 4,
                                     decoration: const InputDecoration(
                                       labelText: '摘要',
                                       hintText: '用于列表摘要、SEO 简述或卡片预览。',
@@ -362,8 +360,8 @@ class _PostEditorScreenState extends State<PostEditorScreen> {
                                   SizedBox(height: compact ? 10 : 14),
                                   TextFormField(
                                     controller: _contentController,
-                                    minLines: compact ? 8 : 12,
-                                    maxLines: compact ? 14 : 20,
+                                    minLines: compact ? 7 : 10,
+                                    maxLines: compact ? 12 : 16,
                                     decoration: const InputDecoration(
                                       labelText: '正文',
                                       hintText: '支持直接填写原始正文内容。',
@@ -384,11 +382,12 @@ class _PostEditorScreenState extends State<PostEditorScreen> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  const SectionHeading(
-                                    title: '结构与发布',
-                                    subtitle: '这部分影响链接结构、发布时间和封面展示。',
+                                  Text(
+                                    '结构与发布',
+                                    style: Theme.of(context).textTheme.titleMedium
+                                        ?.copyWith(fontWeight: FontWeight.w800),
                                   ),
-                                  SizedBox(height: compact ? 12 : 18),
+                                  SizedBox(height: compact ? 10 : 12),
                                   LayoutBuilder(
                                     builder: (context, constraints) {
                                       final stacked =
@@ -485,11 +484,12 @@ class _PostEditorScreenState extends State<PostEditorScreen> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  const SectionHeading(
-                                    title: '分类与标签',
-                                    subtitle: '用多选芯片处理引用数据，比传统下拉更适合移动端。',
+                                  Text(
+                                    '分类与标签',
+                                    style: Theme.of(context).textTheme.titleMedium
+                                        ?.copyWith(fontWeight: FontWeight.w800),
                                   ),
-                                  SizedBox(height: compact ? 12 : 18),
+                                  SizedBox(height: compact ? 10 : 12),
                                   _TermSelector(
                                     title: '分类',
                                     emptyText: '当前没有分类可选。',
@@ -517,11 +517,12 @@ class _PostEditorScreenState extends State<PostEditorScreen> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  const SectionHeading(
-                                    title: '保存前检查',
-                                    subtitle: '确保状态、摘要和正文都已经准备好，再提交到远端。',
+                                  Text(
+                                    '保存前检查',
+                                    style: Theme.of(context).textTheme.titleMedium
+                                        ?.copyWith(fontWeight: FontWeight.w800),
                                   ),
-                                  SizedBox(height: compact ? 12 : 18),
+                                  SizedBox(height: compact ? 10 : 12),
                                   Wrap(
                                     spacing: compact ? 8 : 10,
                                     runSpacing: compact ? 8 : 10,

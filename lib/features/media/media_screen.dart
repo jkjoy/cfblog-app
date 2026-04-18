@@ -300,7 +300,6 @@ class _MediaScreenState extends State<MediaScreen> {
           PaginationCard(
             currentPage: _page,
             totalPages: _totalPages,
-            nextLabel: '第 $_page / $_totalPages 页',
             onPrevious: () {
               setState(() {
                 _page -= 1;

@@ -6,6 +6,19 @@ import '../../core/models.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/app_chrome.dart';
 
+Future<bool?> showMomentEditorSheet(
+  BuildContext context, {
+  required CfblogApi api,
+  WpMoment? moment,
+}) {
+  return showModalBottomSheet<bool>(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.transparent,
+    builder: (context) => _MomentEditorSheet(api: api, moment: moment),
+  );
+}
+
 class MomentsScreen extends StatefulWidget {
   const MomentsScreen({super.key, required this.api});
 
@@ -69,11 +82,10 @@ class _MomentsScreenState extends State<MomentsScreen> {
   }
 
   Future<void> _openEditor({WpMoment? moment}) async {
-    final changed = await showModalBottomSheet<bool>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => _MomentEditorSheet(api: widget.api, moment: moment),
+    final changed = await showMomentEditorSheet(
+      context,
+      api: widget.api,
+      moment: moment,
     );
 
     if (changed == true && mounted) {

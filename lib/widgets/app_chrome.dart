@@ -345,15 +345,43 @@ class EmptyStateCard extends StatelessWidget {
     final theme = Theme.of(context);
     final compact = isCompactLayout(context);
     return SurfaceCard(
-      child: Column(
+      padding: EdgeInsets.symmetric(
+        horizontal: compact ? 14 : 16,
+        vertical: compact ? 12 : 14,
+      ),
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: theme.textTheme.titleLarge),
-          SizedBox(height: compact ? 6 : 8),
-          Text(
-            subtitle,
-            style: (compact ? theme.textTheme.bodySmall : theme.textTheme.bodyMedium)?.copyWith(
+          Container(
+            width: compact ? 32 : 36,
+            height: compact ? 32 : 36,
+            decoration: BoxDecoration(
+              color: AppTheme.surfaceMuted,
+              borderRadius: BorderRadius.circular(compact ? 10 : 12),
+            ),
+            child: Icon(
+              Icons.inbox_rounded,
+              size: compact ? 16 : 18,
               color: AppTheme.textMuted,
+            ),
+          ),
+          SizedBox(width: compact ? 10 : 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: (compact ? theme.textTheme.titleMedium : theme.textTheme.titleLarge)
+                      ?.copyWith(fontWeight: FontWeight.w700),
+                ),
+                SizedBox(height: compact ? 3 : 6),
+                Text(
+                  subtitle,
+                  style: (compact ? theme.textTheme.bodySmall : theme.textTheme.bodyMedium)
+                      ?.copyWith(color: AppTheme.textMuted),
+                ),
+              ],
             ),
           ),
         ],
@@ -375,25 +403,36 @@ class BootPanel extends StatelessWidget {
     return ConstrainedBox(
       constraints: const BoxConstraints(maxWidth: 440),
       child: SurfaceCard(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
+        padding: EdgeInsets.symmetric(
+          horizontal: compact ? 14 : 16,
+          vertical: compact ? 12 : 14,
+        ),
+        child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const SizedBox(
-              width: 28,
-              height: 28,
-              child: CircularProgressIndicator(strokeWidth: 2.8),
+            SizedBox(
+              width: compact ? 22 : 24,
+              height: compact ? 22 : 24,
+              child: const CircularProgressIndicator(strokeWidth: 2.6),
             ),
-            SizedBox(height: compact ? 12 : 18),
-            Text(
-              title,
-              style: compact ? theme.textTheme.titleLarge : theme.textTheme.headlineSmall,
-            ),
-            SizedBox(height: compact ? 6 : 8),
-            Text(
-              subtitle,
-              style: (compact ? theme.textTheme.bodySmall : theme.textTheme.bodyMedium)?.copyWith(
-                color: AppTheme.textMuted,
+            SizedBox(width: compact ? 10 : 12),
+            Expanded(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: (compact ? theme.textTheme.titleMedium : theme.textTheme.titleLarge)
+                        ?.copyWith(fontWeight: FontWeight.w700),
+                  ),
+                  SizedBox(height: compact ? 3 : 6),
+                  Text(
+                    subtitle,
+                    style: (compact ? theme.textTheme.bodySmall : theme.textTheme.bodyMedium)
+                        ?.copyWith(color: AppTheme.textMuted),
+                  ),
+                ],
               ),
             ),
           ],
@@ -422,23 +461,75 @@ class PaginationCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final compact = isCompactLayout(context);
+    final pageLabel = '第 $currentPage / $totalPages 页';
+
+    if (compact) {
+      return SurfaceCard(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        child: Row(
+          children: [
+            SizedBox(
+              width: 42,
+              height: 38,
+              child: OutlinedButton(
+                onPressed: currentPage <= 1 ? null : onPrevious,
+                style: OutlinedButton.styleFrom(
+                  padding: EdgeInsets.zero,
+                  visualDensity: VisualDensity.compact,
+                ),
+                child: const Icon(Icons.arrow_back_rounded),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                pageLabel,
+                textAlign: TextAlign.center,
+                style: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.copyWith(color: AppTheme.textMuted),
+              ),
+            ),
+            const SizedBox(width: 8),
+            SizedBox(
+              width: 42,
+              height: 38,
+              child: FilledButton(
+                onPressed: currentPage >= totalPages ? null : onNext,
+                style: FilledButton.styleFrom(
+                  padding: EdgeInsets.zero,
+                  visualDensity: VisualDensity.compact,
+                ),
+                child: const Icon(Icons.arrow_forward_rounded),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
     return SurfaceCard(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
         children: [
+          OutlinedButton.icon(
+            onPressed: currentPage <= 1 ? null : onPrevious,
+            icon: const Icon(Icons.arrow_back_rounded),
+            label: const Text('上一页'),
+          ),
           Expanded(
-            child: OutlinedButton.icon(
-              onPressed: currentPage <= 1 ? null : onPrevious,
-              icon: const Icon(Icons.arrow_back_rounded),
-              label: const Text('上一页'),
+            child: Text(
+              pageLabel,
+              textAlign: TextAlign.center,
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: AppTheme.textMuted),
             ),
           ),
-          SizedBox(width: compact ? 8 : 12),
-          Expanded(
-            child: FilledButton.icon(
-              onPressed: currentPage >= totalPages ? null : onNext,
-              icon: const Icon(Icons.arrow_forward_rounded),
-              label: Text(nextLabel),
-            ),
+          FilledButton.icon(
+            onPressed: currentPage >= totalPages ? null : onNext,
+            icon: const Icon(Icons.arrow_forward_rounded),
+            label: Text(nextLabel),
           ),
         ],
       ),

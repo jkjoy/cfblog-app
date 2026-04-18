@@ -279,6 +279,13 @@ class _WorkspaceShellState extends State<WorkspaceShell> {
     );
   }
 
+  Future<void> _openMobileMomentComposer(CfblogApi api) async {
+    final changed = await showMomentEditorSheet(context, api: api);
+    if (changed == true) {
+      _selectTab(WorkspaceTab.moments);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final api = CfblogApi(
@@ -326,7 +333,7 @@ class _WorkspaceShellState extends State<WorkspaceShell> {
             : _MobileBottomNavigation(
                 currentTab: _currentTab,
                 onSelect: _selectTab,
-                onOpenMore: _openMobileWorkspaceSheet,
+                onComposeMoment: () => _openMobileMomentComposer(api),
               ),
         body: SafeArea(
           child: isWide
@@ -672,57 +679,141 @@ class _MobileBottomNavigation extends StatelessWidget {
   const _MobileBottomNavigation({
     required this.currentTab,
     required this.onSelect,
-    required this.onOpenMore,
+    required this.onComposeMoment,
   });
 
   final WorkspaceTab currentTab;
   final ValueChanged<WorkspaceTab> onSelect;
-  final VoidCallback onOpenMore;
+  final VoidCallback onComposeMoment;
 
   @override
   Widget build(BuildContext context) {
-    final selectedIndex = switch (currentTab) {
-      WorkspaceTab.overview => 0,
-      WorkspaceTab.posts => 1,
-      WorkspaceTab.media => 2,
-      _ => 3,
-    };
-
     return SafeArea(
       minimum: const EdgeInsets.fromLTRB(10, 0, 10, 10),
       child: SurfaceCard(
-        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
-        child: NavigationBar(
-          selectedIndex: selectedIndex,
-          labelBehavior: NavigationDestinationLabelBehavior.onlyShowSelected,
-          height: 64,
-          onDestinationSelected: (index) {
-            if (index == 0) {
-              onSelect(WorkspaceTab.overview);
-            } else if (index == 1) {
-              onSelect(WorkspaceTab.posts);
-            } else if (index == 2) {
-              onSelect(WorkspaceTab.media);
-            } else {
-              onOpenMore();
-            }
-          },
-          destinations: const [
-            NavigationDestination(
-              icon: Icon(Icons.space_dashboard_rounded),
-              label: '总览',
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+        child: Row(
+          children: [
+            Expanded(
+              child: _MobileNavItem(
+                icon: Icons.space_dashboard_rounded,
+                label: '总览',
+                selected: currentTab == WorkspaceTab.overview,
+                onTap: () => onSelect(WorkspaceTab.overview),
+              ),
             ),
-            NavigationDestination(
-              icon: Icon(Icons.article_rounded),
-              label: '文章',
+            Expanded(
+              child: _MobileNavItem(
+                icon: Icons.article_rounded,
+                label: '文章',
+                selected: currentTab == WorkspaceTab.posts,
+                onTap: () => onSelect(WorkspaceTab.posts),
+              ),
             ),
-            NavigationDestination(
-              icon: Icon(Icons.perm_media_rounded),
-              label: '媒体',
+            Expanded(
+              child: _MobileNavItem(
+                icon: Icons.perm_media_rounded,
+                label: '媒体',
+                selected: currentTab == WorkspaceTab.media,
+                onTap: () => onSelect(WorkspaceTab.media),
+              ),
             ),
-            NavigationDestination(
-              icon: Icon(Icons.grid_view_rounded),
-              label: '更多',
+            Expanded(
+              child: _MobileComposeItem(
+                selected: currentTab == WorkspaceTab.moments,
+                onTap: onComposeMoment,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _MobileNavItem extends StatelessWidget {
+  const _MobileNavItem({
+    required this.icon,
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = selected ? AppTheme.accent : AppTheme.textMuted;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 22, color: color),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: color,
+                fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _MobileComposeItem extends StatelessWidget {
+  const _MobileComposeItem({
+    required this.selected,
+    required this.onTap,
+  });
+
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(18),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                color: selected ? AppTheme.accent : AppTheme.inkPanel,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(
+                Icons.bolt_rounded,
+                size: 18,
+                color: Colors.white,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              '撰写',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: selected ? AppTheme.accent : AppTheme.textMuted,
+                fontWeight: FontWeight.w700,
+              ),
             ),
           ],
         ),

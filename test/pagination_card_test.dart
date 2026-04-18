@@ -46,7 +46,6 @@ void main() {
             totalPages: 1,
             onPrevious: () {},
             onNext: () {},
-            nextLabel: '第 1 / 1 页',
           ),
         ),
       ),
@@ -55,13 +54,8 @@ void main() {
     final previousButton = tester.widget<OutlinedButton>(
       find.widgetWithText(OutlinedButton, '上一页'),
     );
-    final nextButton = tester.widget<ButtonStyleButton>(
-      find.ancestor(
-        of: find.text('第 1 / 1 页'),
-        matching: find.byWidgetPredicate(
-          (widget) => widget is ButtonStyleButton,
-        ),
-      ),
+    final nextButton = tester.widget<FilledButton>(
+      find.widgetWithText(FilledButton, '下一页'),
     );
 
     expect(previousButton.onPressed, isNull);
