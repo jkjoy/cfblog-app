@@ -23,7 +23,6 @@ class _PostsScreenState extends State<PostsScreen> {
   String? _error;
   List<WpPost> _posts = const [];
   int _page = 1;
-  int _total = 0;
   int _totalPages = 1;
   String _search = '';
   String _status = 'publish';
@@ -64,7 +63,6 @@ class _PostsScreenState extends State<PostsScreen> {
       }
       setState(() {
         _posts = data.items;
-        _total = data.total;
         _totalPages = data.totalPages;
       });
     } catch (error) {
@@ -109,47 +107,42 @@ class _PostsScreenState extends State<PostsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final compact = isCompactLayout(context);
+    final toolbarButtonStyle = FilledButton.styleFrom(
+      visualDensity: VisualDensity.compact,
+      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      padding: EdgeInsets.symmetric(
+        horizontal: compact ? 12 : 14,
+        vertical: compact ? 10 : 12,
+      ),
+    );
+
     return RefreshIndicator(
       onRefresh: _loadPosts,
       child: ListView(
         padding: pageContentPadding(context),
         children: [
           SurfaceCard(
+            padding: EdgeInsets.all(compact ? 12 : 14),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                SectionHeading(
-                  title: '文章列表',
-                  subtitle: '筛选、审阅和编辑都已经合并进这条内容工作流里。',
-                  trailing: Wrap(
-                    spacing: 12,
-                    runSpacing: 12,
-                    children: [
-                      FilledButton.tonalIcon(
-                        onPressed: _loadPosts,
-                        icon: const Icon(Icons.refresh_rounded),
-                        label: const Text('刷新'),
-                      ),
-                      FilledButton.icon(
-                        onPressed: () => _openEditor(),
-                        icon: const Icon(Icons.add_rounded),
-                        label: const Text('写文章'),
-                      ),
-                    ],
-                  ),
-                ),
-                SizedBox(height: isCompactLayout(context) ? 12 : 18),
                 LayoutBuilder(
                   builder: (context, constraints) {
-                    final stacked = constraints.maxWidth < 720;
+                    final stacked = constraints.maxWidth < 860;
                     final searchField = TextField(
                       controller: _searchController,
                       textInputAction: TextInputAction.search,
                       onSubmitted: (_) => _submitSearch(),
-                      decoration: const InputDecoration(
-                        labelText: '搜索文章',
-                        hintText: '按标题、摘要或 slug 搜索',
-                        prefixIcon: Icon(Icons.search_rounded),
+                      decoration: InputDecoration(
+                        isDense: true,
+                        hintText: '搜索标题',
+                        prefixIcon: const Icon(Icons.search_rounded),
+                        suffixIcon: IconButton(
+                          onPressed: _submitSearch,
+                          tooltip: '搜索',
+                          icon: const Icon(Icons.arrow_forward_rounded),
+                        ),
                       ),
                     );
 
@@ -158,55 +151,73 @@ class _PostsScreenState extends State<PostsScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           searchField,
-                          SizedBox(height: isCompactLayout(context) ? 10 : 12),
-                          FilledButton(
-                            onPressed: _submitSearch,
-                            child: const Text('搜索'),
+                          SizedBox(height: compact ? 10 : 12),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: [
+                              FilledButton.tonalIcon(
+                                onPressed: _loadPosts,
+                                style: toolbarButtonStyle,
+                                icon: const Icon(Icons.refresh_rounded),
+                                label: const Text('刷新'),
+                              ),
+                              FilledButton.icon(
+                                onPressed: () => _openEditor(),
+                                style: toolbarButtonStyle,
+                                icon: const Icon(Icons.add_rounded),
+                                label: const Text('写文章'),
+                              ),
+                            ],
                           ),
                         ],
                       );
                     }
 
                     return Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Expanded(child: searchField),
-                        SizedBox(width: isCompactLayout(context) ? 8 : 12),
-                        FilledButton(
-                          onPressed: _submitSearch,
-                          child: const Text('搜索'),
+                        const SizedBox(width: 10),
+                        FilledButton.tonalIcon(
+                          onPressed: _loadPosts,
+                          style: toolbarButtonStyle,
+                          icon: const Icon(Icons.refresh_rounded),
+                          label: const Text('刷新'),
+                        ),
+                        const SizedBox(width: 8),
+                        FilledButton.icon(
+                          onPressed: () => _openEditor(),
+                          style: toolbarButtonStyle,
+                          icon: const Icon(Icons.add_rounded),
+                          label: const Text('写文章'),
                         ),
                       ],
                     );
                   },
                 ),
-                SizedBox(height: isCompactLayout(context) ? 12 : 16),
-                SelectionChipBar<String>(
-                  items: _statusOptions,
-                  value: _status,
-                  labelBuilder: statusLabel,
-                  onSelected: (status) {
-                    setState(() {
-                      _status = status;
-                      _page = 1;
-                    });
-                    _loadPosts();
-                  },
-                ),
-                SizedBox(height: isCompactLayout(context) ? 10 : 16),
-                Text(
-                  '当前共 $_total 篇，第 $_page / $_totalPages 页',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodyMedium?.copyWith(color: AppTheme.textMuted),
+                SizedBox(height: compact ? 10 : 12),
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: SelectionChipBar<String>(
+                    items: _statusOptions,
+                    value: _status,
+                    labelBuilder: statusLabel,
+                    onSelected: (status) {
+                      setState(() {
+                        _status = status;
+                        _page = 1;
+                      });
+                      _loadPosts();
+                    },
+                  ),
                 ),
               ],
             ),
           ),
-          SizedBox(height: isCompactLayout(context) ? 12 : 16),
+          SizedBox(height: compact ? 12 : 16),
           if (_error != null) ...[
             InfoBanner(message: _error!, isError: true),
-            SizedBox(height: isCompactLayout(context) ? 12 : 16),
+            SizedBox(height: compact ? 12 : 16),
           ],
           if (_loading)
             const BootPanel(title: '正在加载文章', subtitle: '同步远程列表并刷新筛选结果。')
@@ -218,14 +229,14 @@ class _PostsScreenState extends State<PostsScreen> {
           else
             ..._posts.map(
               (post) => Padding(
-                padding: EdgeInsets.only(bottom: isCompactLayout(context) ? 10 : 14),
+                padding: EdgeInsets.only(bottom: compact ? 10 : 14),
                 child: _PostCard(
                   post: post,
                   onEdit: () => _openEditor(postId: post.id),
                 ),
               ),
             ),
-          SizedBox(height: isCompactLayout(context) ? 2 : 4),
+          SizedBox(height: compact ? 2 : 4),
           PaginationCard(
             currentPage: _page,
             totalPages: _totalPages,
@@ -256,94 +267,74 @@ class _PostCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final excerpt = stripHtml(post.excerpt);
+    final compact = isCompactLayout(context);
+    final title = stripHtml(post.title).isEmpty ? '未命名文章' : stripHtml(post.title);
+    final timeLabel = _formatPostListTimestamp(
+      post.modified.isEmpty ? post.date : post.modified,
+      compact: compact,
+    );
     return SurfaceCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Wrap(
-            spacing: 10,
-            runSpacing: 10,
+      padding: EdgeInsets.symmetric(
+        horizontal: compact ? 12 : 14,
+        vertical: compact ? 10 : 12,
+      ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final useShortTime = compact || constraints.maxWidth < 640;
+          final timestamp = useShortTime
+              ? _formatPostListTimestamp(
+                  post.modified.isEmpty ? post.date : post.modified,
+                  compact: true,
+                )
+              : timeLabel;
+          final timeWidth = useShortTime ? 74.0 : 124.0;
+
+          return Row(
             children: [
               _Badge(
                 label: statusLabel(post.status),
                 background: AppTheme.accentSoft,
                 foreground: AppTheme.accent,
               ),
-              if (post.authorName.isNotEmpty)
-                _Badge(
-                  label: post.authorName,
-                  background: const Color(0xFFE4EFEB),
-                  foreground: AppTheme.success,
+              if (post.sticky) ...[
+                const SizedBox(width: 8),
+                Icon(Icons.push_pin_rounded, size: 16, color: AppTheme.success),
+              ],
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
-              _Badge(
-                label: post.slug.isEmpty ? '未设置 slug' : post.slug,
-                background: AppTheme.surfaceMuted,
-                foreground: AppTheme.text,
+              ),
+              const SizedBox(width: 10),
+              SizedBox(
+                width: timeWidth,
+                child: Text(
+                  timestamp,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.right,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: AppTheme.textMuted,
+                    fontFeatures: const [FontFeature.tabularFigures()],
+                  ),
+                ),
+              ),
+              const SizedBox(width: 4),
+              IconButton(
+                onPressed: onEdit,
+                tooltip: '编辑文章',
+                icon: const Icon(Icons.edit_rounded),
+                visualDensity: VisualDensity.compact,
               ),
             ],
-          ),
-          const SizedBox(height: 14),
-          Text(
-            stripHtml(post.title).isEmpty ? '未命名文章' : stripHtml(post.title),
-            style: Theme.of(
-              context,
-            ).textTheme.headlineSmall?.copyWith(fontSize: 24),
-          ),
-          const SizedBox(height: 10),
-          Text(
-            excerpt.isEmpty ? '这篇文章还没有摘要，建议补一段列表导语。' : excerpt,
-            style: Theme.of(
-              context,
-            ).textTheme.bodyMedium?.copyWith(color: AppTheme.textMuted),
-          ),
-          const SizedBox(height: 16),
-          Wrap(
-            spacing: 12,
-            runSpacing: 12,
-            alignment: WrapAlignment.spaceBetween,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: [
-              Wrap(
-                spacing: 12,
-                runSpacing: 12,
-                children: [
-                  _InlineMeta(
-                    icon: Icons.schedule_rounded,
-                    label: formatDate(
-                      post.modified.isEmpty ? post.date : post.modified,
-                    ),
-                  ),
-                  _InlineMeta(
-                    icon: Icons.mode_comment_outlined,
-                    label: '${post.commentCount} 评论',
-                  ),
-                  _InlineMeta(
-                    icon: Icons.visibility_outlined,
-                    label: '${post.viewCount} 浏览',
-                  ),
-                ],
-              ),
-              Wrap(
-                spacing: 10,
-                runSpacing: 10,
-                children: [
-                  if (post.sticky)
-                    _Badge(
-                      label: '置顶',
-                      background: const Color(0xFFE4EFEB),
-                      foreground: AppTheme.success,
-                    ),
-                  OutlinedButton.icon(
-                    onPressed: onEdit,
-                    icon: const Icon(Icons.edit_rounded),
-                    label: const Text('编辑'),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ],
+          );
+        },
       ),
     );
   }
@@ -363,7 +354,7 @@ class _Badge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
         color: background,
         borderRadius: BorderRadius.circular(999),
@@ -379,21 +370,24 @@ class _Badge extends StatelessWidget {
   }
 }
 
-class _InlineMeta extends StatelessWidget {
-  const _InlineMeta({required this.icon, required this.label});
-
-  final IconData icon;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, size: 16, color: AppTheme.textMuted),
-        const SizedBox(width: 6),
-        Text(label, style: Theme.of(context).textTheme.bodySmall),
-      ],
-    );
+String _formatPostListTimestamp(String raw, {required bool compact}) {
+  if (raw.isEmpty) {
+    return '未设置';
   }
+
+  final date = DateTime.tryParse(raw)?.toLocal();
+  if (date == null) {
+    return raw;
+  }
+
+  final month = date.month.toString().padLeft(2, '0');
+  final day = date.day.toString().padLeft(2, '0');
+  final hour = date.hour.toString().padLeft(2, '0');
+  final minute = date.minute.toString().padLeft(2, '0');
+
+  if (compact) {
+    return '$month-$day $hour:$minute';
+  }
+
+  return '${date.year}-$month-$day $hour:$minute';
 }

@@ -176,6 +176,75 @@ class SectionHeading extends StatelessWidget {
   }
 }
 
+class ActionSectionHeader extends StatelessWidget {
+  const ActionSectionHeader({
+    super.key,
+    required this.title,
+    this.subtitle,
+    this.actions = const <Widget>[],
+  });
+
+  final String title;
+  final String? subtitle;
+  final List<Widget> actions;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final compact = isCompactLayout(context);
+    final hasSubtitle = subtitle != null && subtitle!.trim().isNotEmpty;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Expanded(
+              child: Text(
+                title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: (compact
+                        ? theme.textTheme.titleLarge
+                        : theme.textTheme.headlineSmall)
+                    ?.copyWith(fontWeight: FontWeight.w800),
+              ),
+            ),
+            if (actions.isNotEmpty) ...[
+              const SizedBox(width: 12),
+              Flexible(
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      for (var i = 0; i < actions.length; i++) ...[
+                        if (i > 0) SizedBox(width: compact ? 8 : 10),
+                        actions[i],
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+        if (hasSubtitle) ...[
+          SizedBox(height: compact ? 4 : 6),
+          Text(
+            subtitle!,
+            maxLines: compact ? 2 : null,
+            overflow: compact ? TextOverflow.ellipsis : null,
+            style: (compact ? theme.textTheme.bodySmall : theme.textTheme.bodyMedium)
+                ?.copyWith(color: AppTheme.textMuted),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
 class MetricTile extends StatelessWidget {
   const MetricTile({
     super.key,

@@ -227,71 +227,56 @@ class _MediaScreenState extends State<MediaScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final compact = isCompactLayout(context);
+    final toolbarButtonStyle = FilledButton.styleFrom(
+      visualDensity: VisualDensity.compact,
+      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      padding: EdgeInsets.symmetric(
+        horizontal: compact ? 12 : 14,
+        vertical: compact ? 10 : 12,
+      ),
+    );
+
     return RefreshIndicator(
       onRefresh: _loadMedia,
       child: ListView(
         padding: pageContentPadding(context),
         children: [
           SurfaceCard(
+            padding: EdgeInsets.all(compact ? 12 : 14),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                SectionHeading(
-                  title: '媒体库',
-                  subtitle: '处理图片、视频、PDF 等站点素材，优先打通上传和元数据维护。',
-                  trailing: FilledButton.tonalIcon(
-                    onPressed: _loadMedia,
-                    icon: const Icon(Icons.refresh_rounded),
-                    label: const Text('刷新'),
-                  ),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    FilledButton.tonalIcon(
+                      onPressed: _loadMedia,
+                      style: toolbarButtonStyle,
+                      icon: const Icon(Icons.refresh_rounded),
+                      label: const Text('刷新'),
+                    ),
+                  ],
                 ),
-                SizedBox(height: isCompactLayout(context) ? 12 : 18),
-                LayoutBuilder(
-                  builder: (context, constraints) {
-                    final stacked = constraints.maxWidth < 760;
-                    final uploadCard = _UploadCard(
-                      selectedFile: _selectedFile,
-                      titleController: _titleController,
-                      altController: _altController,
-                      captionController: _captionController,
-                      descriptionController: _descriptionController,
-                      uploading: _uploading,
-                      onChooseFile: _chooseFile,
-                      onUpload: _upload,
-                    );
-
-                    final tipsCard = _MediaTipsCard(
-                      selectedFile: _selectedFile,
-                    );
-
-                    if (stacked) {
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          uploadCard,
-                          SizedBox(height: isCompactLayout(context) ? 12 : 16),
-                          tipsCard,
-                        ],
-                      );
-                    }
-
-                    return Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(child: uploadCard),
-                        SizedBox(width: isCompactLayout(context) ? 12 : 16),
-                        Expanded(child: tipsCard),
-                      ],
-                    );
-                  },
+                SizedBox(height: compact ? 10 : 12),
+                _UploadCard(
+                  selectedFile: _selectedFile,
+                  titleController: _titleController,
+                  altController: _altController,
+                  captionController: _captionController,
+                  descriptionController: _descriptionController,
+                  uploading: _uploading,
+                  onChooseFile: _chooseFile,
+                  onUpload: _upload,
                 ),
               ],
             ),
           ),
-          SizedBox(height: isCompactLayout(context) ? 12 : 16),
+          SizedBox(height: compact ? 12 : 16),
           if (_message != null) ...[
             InfoBanner(message: _message!, isError: _isError),
-            SizedBox(height: isCompactLayout(context) ? 12 : 16),
+            SizedBox(height: compact ? 12 : 16),
           ],
           if (_loading)
             const BootPanel(title: '正在加载媒体', subtitle: '同步远程媒体列表和当前页状态。')
@@ -303,7 +288,7 @@ class _MediaScreenState extends State<MediaScreen> {
           else
             ..._items.map(
               (item) => Padding(
-                padding: EdgeInsets.only(bottom: isCompactLayout(context) ? 10 : 14),
+                padding: EdgeInsets.only(bottom: compact ? 10 : 14),
                 child: _MediaCard(
                   item: item,
                   onEdit: () => _openEdit(item),
@@ -311,7 +296,7 @@ class _MediaScreenState extends State<MediaScreen> {
                 ),
               ),
             ),
-          SizedBox(height: isCompactLayout(context) ? 2 : 4),
+          SizedBox(height: compact ? 2 : 4),
           PaginationCard(
             currentPage: _page,
             totalPages: _totalPages,
@@ -358,30 +343,20 @@ class _UploadCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final compact = isCompactLayout(context);
     return Container(
-      padding: const EdgeInsets.all(18),
+      padding: EdgeInsets.all(compact ? 14 : 16),
       decoration: BoxDecoration(
         color: AppTheme.surfaceMuted,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(compact ? 20 : 24),
         border: Border.all(color: AppTheme.border),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('上传新媒体', style: Theme.of(context).textTheme.titleLarge),
-          const SizedBox(height: 8),
-          Text(
-            selectedFile == null
-                ? '支持图片、视频、PDF。先选文件，再补充标题与说明。'
-                : selectedFile!.name,
-            style: Theme.of(
-              context,
-            ).textTheme.bodyMedium?.copyWith(color: AppTheme.textMuted),
-          ),
-          const SizedBox(height: 16),
-          Wrap(
-            spacing: 12,
-            runSpacing: 12,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final stacked = constraints.maxWidth < 920;
+          final actions = Wrap(
+            spacing: 8,
+            runSpacing: 8,
             children: [
               OutlinedButton.icon(
                 onPressed: onChooseFile,
@@ -400,98 +375,155 @@ class _UploadCard extends StatelessWidget {
                         ),
                       )
                     : const Icon(Icons.cloud_upload_rounded),
-                label: Text(uploading ? '上传中...' : '开始上传'),
+                label: Text(uploading ? '上传中...' : '上传'),
               ),
             ],
-          ),
-          const SizedBox(height: 16),
-          TextField(
-            controller: titleController,
-            decoration: const InputDecoration(labelText: '标题'),
-          ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: altController,
-            decoration: const InputDecoration(labelText: '替代文本'),
-          ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: captionController,
-            minLines: 2,
-            maxLines: 4,
-            decoration: const InputDecoration(labelText: '说明'),
-          ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: descriptionController,
-            minLines: 3,
-            maxLines: 5,
-            decoration: const InputDecoration(labelText: '描述'),
-          ),
-        ],
+          );
+
+          final fileSummary = Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              _UploadMetaChip(
+                icon: selectedFile == null
+                    ? Icons.photo_library_outlined
+                    : Icons.insert_drive_file_outlined,
+                label: selectedFile?.name ?? '未选择文件',
+              ),
+              if (selectedFile != null)
+                _UploadMetaChip(
+                  icon: Icons.scale_outlined,
+                  label: formatBytes(selectedFile!.size),
+                ),
+              if (selectedFile?.extension?.isNotEmpty == true)
+                _UploadMetaChip(
+                  icon: Icons.category_outlined,
+                  label: selectedFile!.extension!,
+                ),
+            ],
+          );
+
+          final fields = Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              LayoutBuilder(
+                builder: (context, fieldConstraints) {
+                  final narrow = fieldConstraints.maxWidth < 680;
+                  final titleField = TextField(
+                    controller: titleController,
+                    decoration: const InputDecoration(
+                      isDense: true,
+                      labelText: '标题',
+                    ),
+                  );
+                  final altField = TextField(
+                    controller: altController,
+                    decoration: const InputDecoration(
+                      isDense: true,
+                      labelText: '替代文本',
+                    ),
+                  );
+
+                  if (narrow) {
+                    return Column(
+                      children: [
+                        titleField,
+                        const SizedBox(height: 10),
+                        altField,
+                      ],
+                    );
+                  }
+
+                  return Row(
+                    children: [
+                      Expanded(child: titleField),
+                      const SizedBox(width: 10),
+                      Expanded(child: altField),
+                    ],
+                  );
+                },
+              ),
+              const SizedBox(height: 10),
+              LayoutBuilder(
+                builder: (context, fieldConstraints) {
+                  final narrow = fieldConstraints.maxWidth < 680;
+                  final captionField = TextField(
+                    controller: captionController,
+                    minLines: 1,
+                    maxLines: 2,
+                    decoration: const InputDecoration(
+                      isDense: true,
+                      labelText: '说明',
+                    ),
+                  );
+                  final descriptionField = TextField(
+                    controller: descriptionController,
+                    minLines: 1,
+                    maxLines: 2,
+                    decoration: const InputDecoration(
+                      isDense: true,
+                      labelText: '描述',
+                    ),
+                  );
+
+                  if (narrow) {
+                    return Column(
+                      children: [
+                        captionField,
+                        const SizedBox(height: 10),
+                        descriptionField,
+                      ],
+                    );
+                  }
+
+                  return Row(
+                    children: [
+                      Expanded(child: captionField),
+                      const SizedBox(width: 10),
+                      Expanded(child: descriptionField),
+                    ],
+                  );
+                },
+              ),
+            ],
+          );
+
+          if (stacked) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                fileSummary,
+                const SizedBox(height: 10),
+                actions,
+                const SizedBox(height: 12),
+                fields,
+              ],
+            );
+          }
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(child: fileSummary),
+                  const SizedBox(width: 12),
+                  actions,
+                ],
+              ),
+              const SizedBox(height: 12),
+              fields,
+            ],
+          );
+        },
       ),
     );
   }
 }
 
-class _MediaTipsCard extends StatelessWidget {
-  const _MediaTipsCard({required this.selectedFile});
-
-  final PlatformFile? selectedFile;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: AppTheme.inkPanel,
-        borderRadius: BorderRadius.circular(24),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            '上传前提示',
-            style: Theme.of(
-              context,
-            ).textTheme.titleLarge?.copyWith(color: Colors.white),
-          ),
-          const SizedBox(height: 10),
-          Text(
-            '图片优先补全 ALT 和说明。非图片文件至少保留清晰标题，方便后续检索。',
-            style: Theme.of(
-              context,
-            ).textTheme.bodyMedium?.copyWith(color: AppTheme.inkMuted),
-          ),
-          const SizedBox(height: 18),
-          if (selectedFile == null)
-            const _TipPill(icon: Icons.photo_library_outlined, label: '尚未选择文件')
-          else ...[
-            _TipPill(
-              icon: Icons.insert_drive_file_outlined,
-              label: selectedFile!.name,
-            ),
-            const SizedBox(height: 10),
-            _TipPill(
-              icon: Icons.scale_outlined,
-              label: formatBytes(selectedFile!.size),
-            ),
-            const SizedBox(height: 10),
-            _TipPill(
-              icon: Icons.category_outlined,
-              label: selectedFile!.extension?.isNotEmpty == true
-                  ? selectedFile!.extension!
-                  : '未知格式',
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-class _TipPill extends StatelessWidget {
-  const _TipPill({required this.icon, required this.label});
+class _UploadMetaChip extends StatelessWidget {
+  const _UploadMetaChip({required this.icon, required this.label});
 
   final IconData icon;
   final String label;
@@ -499,24 +531,24 @@ class _TipPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+        color: AppTheme.surface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppTheme.border),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 16, color: Colors.white),
+          Icon(icon, size: 16, color: AppTheme.textMuted),
           const SizedBox(width: 8),
-          Flexible(
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 220),
             child: Text(
               label,
-              style: Theme.of(
-                context,
-              ).textTheme.bodySmall?.copyWith(color: Colors.white),
+              style: Theme.of(context).textTheme.bodySmall,
               overflow: TextOverflow.ellipsis,
+              maxLines: 1,
             ),
           ),
         ],
@@ -538,103 +570,54 @@ class _MediaCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final compact = isCompactLayout(context);
+    final title = stripHtml(item.title).isEmpty ? item.slug : stripHtml(item.title);
     return SurfaceCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      padding: EdgeInsets.symmetric(
+        horizontal: compact ? 12 : 14,
+        vertical: compact ? 10 : 12,
+      ),
+      child: Row(
         children: [
-          Wrap(
-            spacing: 10,
-            runSpacing: 10,
-            children: [
-              _Tag(label: item.mediaType.isEmpty ? '媒体' : item.mediaType),
-              _Tag(label: item.mimeType),
-              if (item.mediaDetails?.fileSize case final int size when size > 0)
-                _Tag(label: formatBytes(size)),
-            ],
+          _MediaPreview(item: item),
+          const SizedBox(width: 10),
+          _Tag(label: item.mediaType.isEmpty ? '媒体' : item.mediaType),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              title.isEmpty ? '未命名媒体' : title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+            ),
           ),
-          const SizedBox(height: 16),
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final stacked = constraints.maxWidth < 760;
-              final preview = _MediaPreview(item: item);
-              final details = Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    stripHtml(item.title).isEmpty
-                        ? item.slug
-                        : stripHtml(item.title),
-                    style: Theme.of(context).textTheme.titleLarge,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'ALT: ${item.altText.isEmpty ? '未填写' : item.altText}',
-                    style: Theme.of(context).textTheme.bodyMedium,
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    '说明: ${stripHtml(item.caption).isEmpty ? '未填写' : stripHtml(item.caption)}',
-                    style: Theme.of(context).textTheme.bodyMedium,
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    '链接: ${item.sourceUrl}',
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-                  const SizedBox(height: 12),
-                  Wrap(
-                    spacing: 12,
-                    runSpacing: 12,
-                    children: [
-                      _MetaText(
-                        icon: Icons.schedule_rounded,
-                        label: formatDate(item.date),
-                      ),
-                      if (item.mediaDetails?.width case final int width
-                          when width > 0)
-                        _MetaText(
-                          icon: Icons.straighten_rounded,
-                          label:
-                              '${item.mediaDetails!.width} x ${item.mediaDetails!.height}',
-                        ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  Wrap(
-                    spacing: 10,
-                    runSpacing: 10,
-                    children: [
-                      OutlinedButton.icon(
-                        onPressed: onEdit,
-                        icon: const Icon(Icons.edit_rounded),
-                        label: const Text('编辑'),
-                      ),
-                      FilledButton.tonalIcon(
-                        onPressed: onDelete,
-                        icon: const Icon(Icons.delete_outline_rounded),
-                        label: const Text('删除'),
-                      ),
-                    ],
-                  ),
-                ],
-              );
-
-              if (stacked) {
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [preview, const SizedBox(height: 16), details],
-                );
-              }
-
-              return Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(child: preview),
-                  const SizedBox(width: 16),
-                  Expanded(child: details),
-                ],
-              );
-            },
+          const SizedBox(width: 10),
+          SizedBox(
+            width: compact ? 120 : 168,
+            child: Text(
+              _mediaMeta(item),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.right,
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: AppTheme.textMuted),
+            ),
+          ),
+          const SizedBox(width: 4),
+          IconButton(
+            onPressed: onEdit,
+            tooltip: '编辑媒体',
+            icon: const Icon(Icons.edit_rounded),
+            visualDensity: VisualDensity.compact,
+          ),
+          IconButton(
+            onPressed: onDelete,
+            tooltip: '删除媒体',
+            icon: const Icon(Icons.delete_outline_rounded),
+            visualDensity: VisualDensity.compact,
           ),
         ],
       ),
@@ -651,27 +634,22 @@ class _MediaPreview extends StatelessWidget {
   Widget build(BuildContext context) {
     final preview = item.isImage
         ? ClipRRect(
-            borderRadius: BorderRadius.circular(22),
-            child: AspectRatio(
-              aspectRatio:
-                  item.mediaDetails?.width != null &&
-                      (item.mediaDetails?.height ?? 0) > 0
-                  ? item.mediaDetails!.width / item.mediaDetails!.height
-                  : 1.2,
-              child: Image.network(
-                item.sourceUrl,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) =>
-                    const _MediaFallback(),
-              ),
+            borderRadius: BorderRadius.circular(14),
+            child: Image.network(
+              item.sourceUrl,
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) =>
+                  const _MediaFallback(),
             ),
           )
         : const _MediaFallback();
 
     return Container(
+      width: 46,
+      height: 46,
       decoration: BoxDecoration(
         color: AppTheme.surfaceMuted,
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(14),
         border: Border.all(color: AppTheme.border),
       ),
       clipBehavior: Clip.antiAlias,
@@ -685,41 +663,12 @@ class _MediaFallback extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AspectRatio(
-      aspectRatio: 1.2,
-      child: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(
-              Icons.insert_drive_file_rounded,
-              size: 42,
-              color: AppTheme.textMuted,
-            ),
-            const SizedBox(height: 12),
-            Text('非图片文件', style: Theme.of(context).textTheme.bodyMedium),
-          ],
-        ),
+    return const Center(
+      child: Icon(
+        Icons.insert_drive_file_rounded,
+        size: 22,
+        color: AppTheme.textMuted,
       ),
-    );
-  }
-}
-
-class _MetaText extends StatelessWidget {
-  const _MetaText({required this.icon, required this.label});
-
-  final IconData icon;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, size: 16, color: AppTheme.textMuted),
-        const SizedBox(width: 6),
-        Text(label, style: Theme.of(context).textTheme.bodySmall),
-      ],
     );
   }
 }
@@ -732,7 +681,7 @@ class _Tag extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
         color: AppTheme.surfaceMuted,
         borderRadius: BorderRadius.circular(999),
@@ -745,6 +694,16 @@ class _Tag extends StatelessWidget {
       ),
     );
   }
+}
+
+String _mediaMeta(WpMedia item) {
+  final parts = <String>[
+    formatCompactDate(item.modified.isEmpty ? item.date : item.modified),
+  ];
+  if (item.mediaDetails?.fileSize case final int size when size > 0) {
+    parts.add(formatBytes(size));
+  }
+  return parts.join(' · ');
 }
 
 class _MediaEditSheet extends StatefulWidget {

@@ -46,7 +46,6 @@ class _SystemWorkspaceScreenState extends State<SystemWorkspaceScreen> {
 
   List<SessionUser> _users = const [];
   int _page = 1;
-  int _total = 0;
   int _totalPages = 1;
   String _search = '';
   String _role = '';
@@ -104,7 +103,6 @@ class _SystemWorkspaceScreenState extends State<SystemWorkspaceScreen> {
       }
       setState(() {
         _users = result.items;
-        _total = result.total;
         _totalPages = result.totalPages;
         _isError = false;
       });
@@ -321,56 +319,64 @@ class _SystemWorkspaceScreenState extends State<SystemWorkspaceScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final compact = isCompactLayout(context);
+    final toolbarButtonStyle = FilledButton.styleFrom(
+      visualDensity: VisualDensity.compact,
+      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      padding: EdgeInsets.symmetric(
+        horizontal: compact ? 12 : 14,
+        vertical: compact ? 10 : 12,
+      ),
+    );
+
     return RefreshIndicator(
       onRefresh: _loadCurrent,
       child: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+        padding: pageContentPadding(context),
         children: [
           SurfaceCard(
+            padding: EdgeInsets.all(compact ? 12 : 14),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                SectionHeading(
-                  title: '系统管理',
-                  subtitle: _isUsers
-                      ? '集中处理成员账号、角色和资料字段，保持后台权限边界清晰。'
-                      : '站点基础、通知和社交资料统一在这里维护，减少配置分散。',
-                  trailing: Wrap(
-                    spacing: 12,
-                    runSpacing: 12,
-                    children: [
-                      FilledButton.tonalIcon(
-                        onPressed: _loadCurrent,
-                        icon: const Icon(Icons.refresh_rounded),
-                        label: const Text('刷新'),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    FilledButton.tonalIcon(
+                      onPressed: _loadCurrent,
+                      style: toolbarButtonStyle,
+                      icon: const Icon(Icons.refresh_rounded),
+                      label: const Text('刷新'),
+                    ),
+                    if (_isUsers)
+                      FilledButton.icon(
+                        onPressed: _isAdmin ? () => _openUserEditor() : null,
+                        style: toolbarButtonStyle,
+                        icon: const Icon(Icons.person_add_alt_1_rounded),
+                        label: const Text('新建用户'),
+                      )
+                    else
+                      FilledButton.icon(
+                        onPressed: _savingSettings || !_isAdmin
+                            ? null
+                            : _saveSettings,
+                        style: toolbarButtonStyle,
+                        icon: _savingSettings
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : const Icon(Icons.save_rounded),
+                        label: Text(_savingSettings ? '保存中...' : '保存设置'),
                       ),
-                      if (_isUsers)
-                        FilledButton.icon(
-                          onPressed: _isAdmin ? () => _openUserEditor() : null,
-                          icon: const Icon(Icons.person_add_alt_1_rounded),
-                          label: const Text('新建用户'),
-                        )
-                      else
-                        FilledButton.icon(
-                          onPressed: _savingSettings || !_isAdmin
-                              ? null
-                              : _saveSettings,
-                          icon: _savingSettings
-                              ? const SizedBox(
-                                  width: 18,
-                                  height: 18,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: Colors.white,
-                                  ),
-                                )
-                              : const Icon(Icons.save_rounded),
-                          label: Text(_savingSettings ? '保存中...' : '保存设置'),
-                        ),
-                    ],
-                  ),
+                  ],
                 ),
-                const SizedBox(height: 18),
+                SizedBox(height: compact ? 10 : 12),
                 SegmentedButton<_SystemKind>(
                   segments: const [
                     ButtonSegment<_SystemKind>(
@@ -393,18 +399,23 @@ class _SystemWorkspaceScreenState extends State<SystemWorkspaceScreen> {
                   },
                 ),
                 if (_isUsers) ...[
-                  const SizedBox(height: 18),
+                  SizedBox(height: compact ? 10 : 12),
                   LayoutBuilder(
                     builder: (context, constraints) {
-                      final stacked = constraints.maxWidth < 720;
+                      final stacked = constraints.maxWidth < 860;
                       final searchField = TextField(
                         controller: _searchController,
                         textInputAction: TextInputAction.search,
                         onSubmitted: (_) => _submitSearch(),
-                        decoration: const InputDecoration(
-                          labelText: '搜索用户',
-                          hintText: '按用户名、邮箱或显示名搜索',
-                          prefixIcon: Icon(Icons.search_rounded),
+                        decoration: InputDecoration(
+                          isDense: true,
+                          hintText: '搜索用户',
+                          prefixIcon: const Icon(Icons.search_rounded),
+                          suffixIcon: IconButton(
+                            onPressed: _submitSearch,
+                            tooltip: '搜索',
+                            icon: const Icon(Icons.arrow_forward_rounded),
+                          ),
                         ),
                       );
 
@@ -442,41 +453,23 @@ class _SystemWorkspaceScreenState extends State<SystemWorkspaceScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             searchField,
-                            const SizedBox(height: 12),
+                            SizedBox(height: compact ? 10 : 12),
                             roleField,
-                            const SizedBox(height: 12),
-                            FilledButton(
-                              onPressed: _submitSearch,
-                              child: const Text('搜索'),
-                            ),
                           ],
                         );
                       }
 
                       return Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Expanded(child: searchField),
-                          const SizedBox(width: 12),
+                          const SizedBox(width: 10),
                           SizedBox(width: 180, child: roleField),
-                          const SizedBox(width: 12),
-                          FilledButton(
-                            onPressed: _submitSearch,
-                            child: const Text('搜索'),
-                          ),
                         ],
                       );
                     },
                   ),
-                  const SizedBox(height: 16),
-                  Text(
-                    '当前共 $_total 位用户，第 $_page / $_totalPages 页',
-                    style: Theme.of(
-                      context,
-                    ).textTheme.bodyMedium?.copyWith(color: AppTheme.textMuted),
-                  ),
                 ] else ...[
-                  const SizedBox(height: 16),
+                  SizedBox(height: compact ? 10 : 12),
                   Text(
                     _isAdmin
                         ? '当前账号拥有管理员权限，可以直接保存系统设置。'
@@ -489,10 +482,10 @@ class _SystemWorkspaceScreenState extends State<SystemWorkspaceScreen> {
               ],
             ),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: compact ? 12 : 16),
           if (_message != null) ...[
             InfoBanner(message: _message!, isError: _isError),
-            const SizedBox(height: 16),
+            SizedBox(height: compact ? 12 : 16),
           ],
           if (!_isAdmin) ...[
             InfoBanner(
@@ -501,7 +494,7 @@ class _SystemWorkspaceScreenState extends State<SystemWorkspaceScreen> {
                   : '非管理员不能保存系统设置。',
               isError: false,
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: compact ? 12 : 16),
           ],
           if (_loading)
             BootPanel(
@@ -527,7 +520,7 @@ class _SystemWorkspaceScreenState extends State<SystemWorkspaceScreen> {
     return [
       ..._users.map(
         (user) => Padding(
-          padding: const EdgeInsets.only(bottom: 14),
+          padding: EdgeInsets.only(bottom: isCompactLayout(context) ? 10 : 14),
           child: _UserCard(
             user: user,
             canManage: _isAdmin,
@@ -536,7 +529,7 @@ class _SystemWorkspaceScreenState extends State<SystemWorkspaceScreen> {
           ),
         ),
       ),
-      const SizedBox(height: 4),
+      SizedBox(height: isCompactLayout(context) ? 2 : 4),
       PaginationCard(
         currentPage: _page,
         totalPages: _totalPages,
@@ -682,78 +675,60 @@ class _UserCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final compact = isCompactLayout(context);
+    final title = user.name.isEmpty ? '未命名用户' : user.name;
+    final subtitle = user.email.isEmpty ? user.slug : user.email;
     return SurfaceCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      padding: EdgeInsets.symmetric(
+        horizontal: compact ? 12 : 14,
+        vertical: compact ? 10 : 12,
+      ),
+      child: Row(
         children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _UserAvatar(name: user.name, avatarUrl: _avatarUrl),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      user.name.isEmpty ? '未命名用户' : user.name,
-                      style: Theme.of(context).textTheme.titleLarge,
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      user.email.isEmpty ? user.slug : user.email,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: AppTheme.textMuted,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+          _UserAvatar(name: title, avatarUrl: _avatarUrl),
+          const SizedBox(width: 10),
+          _SystemBadge(
+            label: roleLabel(user.primaryRole),
+            tint: const Color(0xFF6A5168),
           ),
-          const SizedBox(height: 14),
-          Wrap(
-            spacing: 10,
-            runSpacing: 10,
-            children: [
-              _SystemBadge(
-                label: roleLabel(user.primaryRole),
-                tint: const Color(0xFF6A5168),
-              ),
-              _SystemBadge(
-                label: user.slug.isEmpty ? '未设置用户名' : user.slug,
-                tint: AppTheme.inkPanel,
-              ),
-              if (user.registeredDate.isNotEmpty)
-                _SystemBadge(
-                  label: formatDate(user.registeredDate),
-                  tint: AppTheme.warning,
-                ),
-            ],
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              '$title · ${subtitle.isEmpty ? '未设置账号' : subtitle}',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+            ),
           ),
-          const SizedBox(height: 12),
-          Text(
-            user.description.isEmpty ? '暂无简介' : user.description,
-            style: Theme.of(
-              context,
-            ).textTheme.bodyMedium?.copyWith(color: AppTheme.textMuted),
+          if (user.registeredDate.isNotEmpty) ...[
+            const SizedBox(width: 10),
+            SizedBox(
+              width: compact ? 84 : 98,
+              child: Text(
+                formatCompactDate(user.registeredDate),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.right,
+                style: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.copyWith(color: AppTheme.textMuted),
+              ),
+            ),
+          ],
+          const SizedBox(width: 4),
+          IconButton(
+            onPressed: canManage ? onEdit : null,
+            tooltip: '编辑用户',
+            icon: const Icon(Icons.edit_rounded),
+            visualDensity: VisualDensity.compact,
           ),
-          const SizedBox(height: 16),
-          Wrap(
-            spacing: 10,
-            runSpacing: 10,
-            children: [
-              OutlinedButton.icon(
-                onPressed: canManage ? onEdit : null,
-                icon: const Icon(Icons.edit_rounded),
-                label: const Text('编辑'),
-              ),
-              FilledButton.tonalIcon(
-                onPressed: canManage ? onDelete : null,
-                icon: const Icon(Icons.person_remove_alt_1_rounded),
-                label: const Text('删除'),
-              ),
-            ],
+          IconButton(
+            onPressed: canManage ? onDelete : null,
+            tooltip: '删除用户',
+            icon: const Icon(Icons.person_remove_alt_1_rounded),
+            visualDensity: VisualDensity.compact,
           ),
         ],
       ),
@@ -774,8 +749,8 @@ class _UserAvatar extends StatelessWidget {
         borderRadius: BorderRadius.circular(18),
         child: Image.network(
           avatarUrl,
-          width: 54,
-          height: 54,
+          width: 42,
+          height: 42,
           fit: BoxFit.cover,
           errorBuilder: (_, _, _) => _UserAvatarFallback(name: name),
         ),
@@ -793,11 +768,11 @@ class _UserAvatarFallback extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 54,
-      height: 54,
+      width: 42,
+      height: 42,
       decoration: BoxDecoration(
         color: AppTheme.accentSoft,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(14),
       ),
       alignment: Alignment.center,
       child: Text(
@@ -820,7 +795,7 @@ class _SystemBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
         color: tint.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(999),

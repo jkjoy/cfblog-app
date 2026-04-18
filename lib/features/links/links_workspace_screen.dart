@@ -26,7 +26,6 @@ class _LinksWorkspaceScreenState extends State<LinksWorkspaceScreen> {
   List<WpLinkCategory> _allCategories = const [];
   List<WpLinkCategory> _categoryItems = const [];
   int _page = 1;
-  int _total = 0;
   int _totalPages = 1;
   String _visible = 'yes';
 
@@ -60,7 +59,6 @@ class _LinksWorkspaceScreenState extends State<LinksWorkspaceScreen> {
           _allCategories = categories;
           _categoryItems = const [];
           _links = links.items;
-          _total = links.total;
           _totalPages = links.totalPages;
           _isError = false;
         });
@@ -75,7 +73,6 @@ class _LinksWorkspaceScreenState extends State<LinksWorkspaceScreen> {
           _allCategories = categories;
           _categoryItems = pageItems;
           _links = const [];
-          _total = categories.length;
           _totalPages = categories.isEmpty
               ? 1
               : (categories.length / 12).ceil();
@@ -106,7 +103,6 @@ class _LinksWorkspaceScreenState extends State<LinksWorkspaceScreen> {
     setState(() {
       _kind = kind;
       _page = 1;
-      _total = 0;
       _totalPages = 1;
     });
     _loadWorkspace();
@@ -241,47 +237,51 @@ class _LinksWorkspaceScreenState extends State<LinksWorkspaceScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final title = '友情链接';
-    final subtitle = _isLinks
-        ? '维护站点推荐位、展示状态和排序，让外链区域保持整洁。'
-        : '先整理友链分类，再回到友链列表进行归类和排序。';
+    final compact = isCompactLayout(context);
+    final toolbarButtonStyle = FilledButton.styleFrom(
+      visualDensity: VisualDensity.compact,
+      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      padding: EdgeInsets.symmetric(
+        horizontal: compact ? 12 : 14,
+        vertical: compact ? 10 : 12,
+      ),
+    );
 
     return RefreshIndicator(
       onRefresh: _loadWorkspace,
       child: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+        padding: pageContentPadding(context),
         children: [
           SurfaceCard(
+            padding: EdgeInsets.all(compact ? 12 : 14),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                SectionHeading(
-                  title: title,
-                  subtitle: subtitle,
-                  trailing: Wrap(
-                    spacing: 12,
-                    runSpacing: 12,
-                    children: [
-                      FilledButton.tonalIcon(
-                        onPressed: _loadWorkspace,
-                        icon: const Icon(Icons.refresh_rounded),
-                        label: const Text('刷新'),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    FilledButton.tonalIcon(
+                      onPressed: _loadWorkspace,
+                      style: toolbarButtonStyle,
+                      icon: const Icon(Icons.refresh_rounded),
+                      label: const Text('刷新'),
+                    ),
+                    FilledButton.icon(
+                      onPressed: _isLinks
+                          ? () => _openLinkEditor()
+                          : () => _openCategoryEditor(),
+                      style: toolbarButtonStyle,
+                      icon: Icon(
+                        _isLinks
+                            ? Icons.add_link_rounded
+                            : Icons.label_rounded,
                       ),
-                      FilledButton.icon(
-                        onPressed: _isLinks
-                            ? () => _openLinkEditor()
-                            : () => _openCategoryEditor(),
-                        icon: Icon(
-                          _isLinks
-                              ? Icons.add_link_rounded
-                              : Icons.label_rounded,
-                        ),
-                        label: Text(_isLinks ? '新建友链' : '新建友链分类'),
-                      ),
-                    ],
-                  ),
+                      label: Text(_isLinks ? '新建友链' : '新建友链分类'),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 18),
+                SizedBox(height: compact ? 10 : 12),
                 SegmentedButton<_LinksWorkspaceKind>(
                   segments: const [
                     ButtonSegment<_LinksWorkspaceKind>(
@@ -304,34 +304,30 @@ class _LinksWorkspaceScreenState extends State<LinksWorkspaceScreen> {
                   },
                 ),
                 if (_isLinks) ...[
-                  const SizedBox(height: 18),
-                  SelectionChipBar<String>(
-                    items: const ['yes', 'no'],
-                    value: _visible,
-                    labelBuilder: visibleLabel,
-                    onSelected: (visible) {
-                      setState(() {
-                        _visible = visible;
-                        _page = 1;
-                      });
-                      _loadWorkspace();
-                    },
+                  SizedBox(height: compact ? 10 : 12),
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: SelectionChipBar<String>(
+                      items: const ['yes', 'no'],
+                      value: _visible,
+                      labelBuilder: visibleLabel,
+                      onSelected: (visible) {
+                        setState(() {
+                          _visible = visible;
+                          _page = 1;
+                        });
+                        _loadWorkspace();
+                      },
+                    ),
                   ),
                 ],
-                const SizedBox(height: 16),
-                Text(
-                  '当前共 $_total 项，第 $_page / $_totalPages 页',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodyMedium?.copyWith(color: AppTheme.textMuted),
-                ),
               ],
             ),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: compact ? 12 : 16),
           if (_message != null) ...[
             InfoBanner(message: _message!, isError: _isError),
-            const SizedBox(height: 16),
+            SizedBox(height: compact ? 12 : 16),
           ],
           if (_loading)
             BootPanel(
@@ -351,7 +347,7 @@ class _LinksWorkspaceScreenState extends State<LinksWorkspaceScreen> {
           else if (_isLinks)
             ..._links.map(
               (link) => Padding(
-                padding: const EdgeInsets.only(bottom: 14),
+                padding: EdgeInsets.only(bottom: compact ? 10 : 14),
                 child: _LinkCard(
                   link: link,
                   onEdit: () => _openLinkEditor(link: link),
@@ -362,7 +358,7 @@ class _LinksWorkspaceScreenState extends State<LinksWorkspaceScreen> {
           else
             ..._categoryItems.map(
               (category) => Padding(
-                padding: const EdgeInsets.only(bottom: 14),
+                padding: EdgeInsets.only(bottom: compact ? 10 : 14),
                 child: _LinkCategoryCard(
                   category: category,
                   onEdit: () => _openCategoryEditor(category: category),
@@ -370,7 +366,7 @@ class _LinksWorkspaceScreenState extends State<LinksWorkspaceScreen> {
                 ),
               ),
             ),
-          const SizedBox(height: 4),
+          SizedBox(height: compact ? 2 : 4),
           PaginationCard(
             currentPage: _page,
             totalPages: _totalPages,
@@ -406,100 +402,62 @@ class _LinkCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final compact = isCompactLayout(context);
+    final title = link.name.isEmpty ? '未命名友链' : link.name;
+    final category = link.category?.name.isNotEmpty == true
+        ? link.category!.name
+        : '未分类';
     return SurfaceCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      padding: EdgeInsets.symmetric(
+        horizontal: compact ? 12 : 14,
+        vertical: compact ? 10 : 12,
+      ),
+      child: Row(
         children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _LinkAvatar(url: link.avatar, label: link.name),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      link.name.isEmpty ? '未命名友链' : link.name,
-                      style: Theme.of(context).textTheme.titleLarge,
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      link.url,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: AppTheme.textMuted,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+          _LinkAvatar(url: link.avatar, label: title),
+          const SizedBox(width: 10),
+          _LinkBadge(
+            label: visibleLabel(link.visible),
+            tint: AppTheme.success,
           ),
-          const SizedBox(height: 14),
-          Wrap(
-            spacing: 10,
-            runSpacing: 10,
-            children: [
-              _LinkBadge(
-                label: visibleLabel(link.visible),
-                tint: AppTheme.success,
-              ),
-              _LinkBadge(
-                label: link.category?.name.isNotEmpty == true
-                    ? link.category!.name
-                    : '未分类',
-                tint: const Color(0xFF7A5A25),
-              ),
-              _LinkBadge(
-                label: '排序 ${link.sortOrder}',
-                tint: AppTheme.inkPanel,
-              ),
-              _LinkBadge(
-                label: linkTargetLabel(link.target),
-                tint: AppTheme.warning,
-              ),
-            ],
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              '$title · $category',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+            ),
           ),
-          const SizedBox(height: 12),
-          Text(
-            link.description.isEmpty ? '这条友链还没有描述。' : link.description,
-            style: Theme.of(
-              context,
-            ).textTheme.bodyMedium?.copyWith(color: AppTheme.textMuted),
+          const SizedBox(width: 10),
+          SizedBox(
+            width: compact ? 98 : 132,
+            child: Text(
+              formatCompactDate(
+                link.updatedAt.isEmpty ? link.createdAt : link.updatedAt,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.right,
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: AppTheme.textMuted),
+            ),
           ),
-          const SizedBox(height: 14),
-          Wrap(
-            spacing: 12,
-            runSpacing: 12,
-            children: [
-              Text(
-                '评分 ${link.rating}',
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-              Text(
-                formatDate(
-                  link.updatedAt.isEmpty ? link.createdAt : link.updatedAt,
-                ),
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-            ],
+          const SizedBox(width: 4),
+          IconButton(
+            onPressed: onEdit,
+            tooltip: '编辑友链',
+            icon: const Icon(Icons.edit_rounded),
+            visualDensity: VisualDensity.compact,
           ),
-          const SizedBox(height: 16),
-          Wrap(
-            spacing: 10,
-            runSpacing: 10,
-            children: [
-              OutlinedButton.icon(
-                onPressed: onEdit,
-                icon: const Icon(Icons.edit_rounded),
-                label: const Text('编辑'),
-              ),
-              FilledButton.tonalIcon(
-                onPressed: onDelete,
-                icon: const Icon(Icons.delete_outline_rounded),
-                label: const Text('删除'),
-              ),
-            ],
+          IconButton(
+            onPressed: onDelete,
+            tooltip: '删除友链',
+            icon: const Icon(Icons.delete_outline_rounded),
+            visualDensity: VisualDensity.compact,
           ),
         ],
       ),
@@ -520,54 +478,38 @@ class _LinkCategoryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final compact = isCompactLayout(context);
     return SurfaceCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      padding: EdgeInsets.symmetric(
+        horizontal: compact ? 12 : 14,
+        vertical: compact ? 10 : 12,
+      ),
+      child: Row(
         children: [
-          Wrap(
-            spacing: 10,
-            runSpacing: 10,
-            children: [
-              _LinkBadge(label: '友链分类', tint: const Color(0xFF7A5A25)),
-              _LinkBadge(
-                label: '${category.count} 条友链',
-                tint: AppTheme.inkPanel,
-              ),
-            ],
+          _LinkBadge(label: '友链分类', tint: const Color(0xFF7A5A25)),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              '${category.name.isEmpty ? '未命名分类' : category.name} · ${category.count} 条',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+            ),
           ),
-          const SizedBox(height: 14),
-          Text(
-            category.name.isEmpty ? '未命名分类' : category.name,
-            style: Theme.of(context).textTheme.titleLarge,
+          const SizedBox(width: 4),
+          IconButton(
+            onPressed: onEdit,
+            tooltip: '编辑友链分类',
+            icon: const Icon(Icons.edit_rounded),
+            visualDensity: VisualDensity.compact,
           ),
-          const SizedBox(height: 8),
-          Text(
-            category.description.isEmpty ? '这个分类还没有说明。' : category.description,
-            style: Theme.of(
-              context,
-            ).textTheme.bodyMedium?.copyWith(color: AppTheme.textMuted),
-          ),
-          const SizedBox(height: 14),
-          Text(
-            category.slug.isEmpty ? '未设置 slug' : '/${category.slug}',
-            style: Theme.of(context).textTheme.bodySmall,
-          ),
-          const SizedBox(height: 16),
-          Wrap(
-            spacing: 10,
-            runSpacing: 10,
-            children: [
-              OutlinedButton.icon(
-                onPressed: onEdit,
-                icon: const Icon(Icons.edit_rounded),
-                label: const Text('编辑'),
-              ),
-              FilledButton.tonalIcon(
-                onPressed: onDelete,
-                icon: const Icon(Icons.delete_outline_rounded),
-                label: const Text('删除'),
-              ),
-            ],
+          IconButton(
+            onPressed: onDelete,
+            tooltip: '删除友链分类',
+            icon: const Icon(Icons.delete_outline_rounded),
+            visualDensity: VisualDensity.compact,
           ),
         ],
       ),
@@ -584,7 +526,7 @@ class _LinkBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
         color: tint.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(999),
@@ -613,8 +555,8 @@ class _LinkAvatar extends StatelessWidget {
         borderRadius: BorderRadius.circular(18),
         child: Image.network(
           url,
-          width: 54,
-          height: 54,
+          width: 42,
+          height: 42,
           fit: BoxFit.cover,
           errorBuilder: (_, _, _) => _AvatarFallback(label: label),
         ),
@@ -632,11 +574,11 @@ class _AvatarFallback extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 54,
-      height: 54,
+      width: 42,
+      height: 42,
       decoration: BoxDecoration(
         color: AppTheme.accentSoft,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(14),
       ),
       alignment: Alignment.center,
       child: Text(

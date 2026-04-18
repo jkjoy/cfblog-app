@@ -31,6 +31,24 @@ String formatDate(String? raw) {
   return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')} ${date.hour.toString().padLeft(2, '0')}:$minute';
 }
 
+String formatCompactDate(String? raw, {bool withYear = false}) {
+  if (raw == null || raw.isEmpty) {
+    return '未设置';
+  }
+  final date = DateTime.tryParse(raw)?.toLocal();
+  if (date == null) {
+    return raw;
+  }
+
+  final month = date.month.toString().padLeft(2, '0');
+  final day = date.day.toString().padLeft(2, '0');
+  final hour = date.hour.toString().padLeft(2, '0');
+  final minute = date.minute.toString().padLeft(2, '0');
+  return withYear
+      ? '${date.year}-$month-$day $hour:$minute'
+      : '$month-$day $hour:$minute';
+}
+
 String formatBytes(int? bytes) {
   final value = bytes ?? 0;
   if (value <= 0) {

@@ -25,7 +25,6 @@ class _CommentsScreenState extends State<CommentsScreen> {
   bool _isError = false;
   List<WpComment> _items = const [];
   int _page = 1;
-  int _total = 0;
   int _totalPages = 1;
 
   static const _statusOptions = <String>[
@@ -66,7 +65,6 @@ class _CommentsScreenState extends State<CommentsScreen> {
 
       setState(() {
         _items = result.items;
-        _total = result.total;
         _totalPages = result.totalPages;
         _isError = false;
       });
@@ -180,6 +178,15 @@ class _CommentsScreenState extends State<CommentsScreen> {
   @override
   Widget build(BuildContext context) {
     final isPost = _scope == CommentScope.post;
+    final compact = isCompactLayout(context);
+    final toolbarButtonStyle = FilledButton.styleFrom(
+      visualDensity: VisualDensity.compact,
+      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      padding: EdgeInsets.symmetric(
+        horizontal: compact ? 12 : 14,
+        vertical: compact ? 10 : 12,
+      ),
+    );
 
     return RefreshIndicator(
       onRefresh: _loadComments,
@@ -187,70 +194,68 @@ class _CommentsScreenState extends State<CommentsScreen> {
         padding: pageContentPadding(context),
         children: [
           SurfaceCard(
+            padding: EdgeInsets.all(compact ? 12 : 14),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                SectionHeading(
-                  title: '评论审核',
-                  subtitle: '统一处理文章评论和动态评论，优先保证状态切换和快速回复能力。',
-                  trailing: Wrap(
-                    spacing: 12,
-                    runSpacing: 12,
-                    children: [
-                      FilledButton.tonalIcon(
-                        onPressed: _loadComments,
-                        icon: const Icon(Icons.refresh_rounded),
-                        label: const Text('刷新'),
-                      ),
-                      FilledButton.icon(
-                        onPressed: () => _openEditor(),
-                        icon: const Icon(Icons.add_comment_rounded),
-                        label: Text(isPost ? '补录评论' : '补录动态评论'),
-                      ),
-                    ],
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    FilledButton.tonalIcon(
+                      onPressed: _loadComments,
+                      style: toolbarButtonStyle,
+                      icon: const Icon(Icons.refresh_rounded),
+                      label: const Text('刷新'),
+                    ),
+                    FilledButton.icon(
+                      onPressed: () => _openEditor(),
+                      style: toolbarButtonStyle,
+                      icon: const Icon(Icons.add_comment_rounded),
+                      label: Text(isPost ? '补录评论' : '补录动态评论'),
+                    ),
+                  ],
+                ),
+                SizedBox(height: compact ? 10 : 12),
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: SelectionChipBar<CommentScope>(
+                    items: CommentScope.values,
+                    value: _scope,
+                    labelBuilder: (scope) =>
+                        scope == CommentScope.post ? '文章评论' : '动态评论',
+                    onSelected: (scope) {
+                      setState(() {
+                        _scope = scope;
+                        _page = 1;
+                      });
+                      _loadComments();
+                    },
                   ),
                 ),
-                SizedBox(height: isCompactLayout(context) ? 12 : 18),
-                SelectionChipBar<CommentScope>(
-                  items: CommentScope.values,
-                  value: _scope,
-                  labelBuilder: (scope) =>
-                      scope == CommentScope.post ? '文章评论' : '动态评论',
-                  onSelected: (scope) {
-                    setState(() {
-                      _scope = scope;
-                      _page = 1;
-                    });
-                    _loadComments();
-                  },
-                ),
-                SizedBox(height: isCompactLayout(context) ? 10 : 16),
-                SelectionChipBar<String>(
-                  items: _statusOptions,
-                  value: _status,
-                  labelBuilder: commentStatusLabel,
-                  onSelected: (status) {
-                    setState(() {
-                      _status = status;
-                      _page = 1;
-                    });
-                    _loadComments();
-                  },
-                ),
-                SizedBox(height: isCompactLayout(context) ? 10 : 16),
-                Text(
-                  '当前共 $_total 条，第 $_page / $_totalPages 页',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodyMedium?.copyWith(color: AppTheme.textMuted),
+                SizedBox(height: compact ? 10 : 12),
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: SelectionChipBar<String>(
+                    items: _statusOptions,
+                    value: _status,
+                    labelBuilder: commentStatusLabel,
+                    onSelected: (status) {
+                      setState(() {
+                        _status = status;
+                        _page = 1;
+                      });
+                      _loadComments();
+                    },
+                  ),
                 ),
               ],
             ),
           ),
-          SizedBox(height: isCompactLayout(context) ? 12 : 16),
+          SizedBox(height: compact ? 12 : 16),
           if (_message != null) ...[
             InfoBanner(message: _message!, isError: _isError),
-            SizedBox(height: isCompactLayout(context) ? 12 : 16),
+            SizedBox(height: compact ? 12 : 16),
           ],
           if (_loading)
             const BootPanel(title: '正在加载评论', subtitle: '同步远程评论列表和当前筛选状态。')
@@ -262,7 +267,7 @@ class _CommentsScreenState extends State<CommentsScreen> {
           else
             ..._items.map(
               (item) => Padding(
-                padding: EdgeInsets.only(bottom: isCompactLayout(context) ? 10 : 14),
+                padding: EdgeInsets.only(bottom: compact ? 10 : 14),
                 child: _CommentCard(
                   comment: item,
                   scope: _scope,
@@ -273,7 +278,7 @@ class _CommentsScreenState extends State<CommentsScreen> {
                 ),
               ),
             ),
-          SizedBox(height: isCompactLayout(context) ? 2 : 4),
+          SizedBox(height: compact ? 2 : 4),
           PaginationCard(
             currentPage: _page,
             totalPages: _totalPages,
@@ -320,66 +325,98 @@ class _CommentCard extends StatelessWidget {
               ? '文章 #${comment.post == 0 ? '-' : comment.post}'
               : comment.postTitle)
         : '动态 #${comment.moment == 0 ? '-' : comment.moment}';
+    final compact = isCompactLayout(context);
+    final author = comment.authorName.isEmpty ? '匿名用户' : comment.authorName;
+    final content = stripHtml(comment.content);
+    final preview = content.isEmpty ? targetLabel : '$author · $content';
 
     return SurfaceCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Wrap(
-            spacing: 10,
-            runSpacing: 10,
+      padding: EdgeInsets.symmetric(
+        horizontal: compact ? 12 : 14,
+        vertical: compact ? 10 : 12,
+      ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final stacked = constraints.maxWidth < 900;
+          final actions = Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              IconButton(
+                onPressed: onApprove,
+                tooltip: '通过评论',
+                icon: const Icon(Icons.check_circle_outline_rounded),
+                visualDensity: VisualDensity.compact,
+              ),
+              IconButton(
+                onPressed: onPending,
+                tooltip: '标记待审',
+                icon: const Icon(Icons.schedule_rounded),
+                visualDensity: VisualDensity.compact,
+              ),
+              IconButton(
+                onPressed: onEdit,
+                tooltip: '编辑评论',
+                icon: const Icon(Icons.edit_rounded),
+                visualDensity: VisualDensity.compact,
+              ),
+              IconButton(
+                onPressed: onDelete,
+                tooltip: '删除评论',
+                icon: const Icon(Icons.delete_outline_rounded),
+                visualDensity: VisualDensity.compact,
+              ),
+            ],
+          );
+
+          final main = Row(
             children: [
               _CommentBadge(label: commentStatusLabel(comment.status)),
-              _CommentBadge(
-                label: comment.parent > 0 ? '回复 ${comment.parent}' : '顶级评论',
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  preview,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
               ),
-              if (comment.authorEmail.isNotEmpty)
-                _CommentBadge(label: comment.authorEmail),
+              const SizedBox(width: 10),
+              SizedBox(
+                width: compact ? 122 : 180,
+                child: Text(
+                  '$targetLabel · ${formatCompactDate(comment.date)}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.right,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: AppTheme.textMuted,
+                  ),
+                ),
+              ),
             ],
-          ),
-          const SizedBox(height: 14),
-          Text(
-            comment.authorName,
-            style: Theme.of(context).textTheme.titleLarge,
-          ),
-          const SizedBox(height: 6),
-          Text(
-            '$targetLabel · ${formatDate(comment.date)}',
-            style: Theme.of(context).textTheme.bodySmall,
-          ),
-          const SizedBox(height: 12),
-          Text(
-            stripHtml(comment.content),
-            style: Theme.of(context).textTheme.bodyMedium,
-          ),
-          const SizedBox(height: 16),
-          Wrap(
-            spacing: 10,
-            runSpacing: 10,
+          );
+
+          if (stacked) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                main,
+                const SizedBox(height: 6),
+                Align(alignment: Alignment.centerRight, child: actions),
+              ],
+            );
+          }
+
+          return Row(
             children: [
-              FilledButton.tonalIcon(
-                onPressed: onApprove,
-                icon: const Icon(Icons.check_circle_outline_rounded),
-                label: const Text('通过'),
-              ),
-              OutlinedButton.icon(
-                onPressed: onPending,
-                icon: const Icon(Icons.schedule_rounded),
-                label: const Text('待审'),
-              ),
-              OutlinedButton.icon(
-                onPressed: onEdit,
-                icon: const Icon(Icons.edit_rounded),
-                label: const Text('编辑'),
-              ),
-              FilledButton.tonalIcon(
-                onPressed: onDelete,
-                icon: const Icon(Icons.delete_outline_rounded),
-                label: const Text('删除'),
-              ),
+              Expanded(child: main),
+              const SizedBox(width: 4),
+              actions,
             ],
-          ),
-        ],
+          );
+        },
       ),
     );
   }
@@ -393,7 +430,7 @@ class _CommentBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
         color: AppTheme.surfaceMuted,
         borderRadius: BorderRadius.circular(999),

@@ -25,7 +25,6 @@ class _TaxonomiesScreenState extends State<TaxonomiesScreen> {
   String? _message;
   List<WpTerm> _items = const [];
   int _page = 1;
-  int _total = 0;
   int _totalPages = 1;
   String _search = '';
 
@@ -42,11 +41,6 @@ class _TaxonomiesScreenState extends State<TaxonomiesScreen> {
   }
 
   bool get _isCategory => _kind == _TaxonomyKind.category;
-
-  String get _screenTitle => _isCategory ? '内容结构' : '内容结构';
-
-  String get _screenSubtitle =>
-      _isCategory ? '分类负责内容骨架，适合管理层级、说明和文章归属。' : '标签适合补充主题切面，保持轻量、可搜索和可复用。';
 
   String get _createLabel => _isCategory ? '新建分类' : '新建标签';
 
@@ -74,7 +68,6 @@ class _TaxonomiesScreenState extends State<TaxonomiesScreen> {
       }
       setState(() {
         _items = result.items;
-        _total = result.total;
         _totalPages = result.totalPages;
         _isError = false;
       });
@@ -183,7 +176,6 @@ class _TaxonomiesScreenState extends State<TaxonomiesScreen> {
     setState(() {
       _kind = kind;
       _page = 1;
-      _total = 0;
       _totalPages = 1;
       _search = '';
       _searchController.clear();
@@ -193,40 +185,49 @@ class _TaxonomiesScreenState extends State<TaxonomiesScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final compact = isCompactLayout(context);
+    final toolbarButtonStyle = FilledButton.styleFrom(
+      visualDensity: VisualDensity.compact,
+      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      padding: EdgeInsets.symmetric(
+        horizontal: compact ? 12 : 14,
+        vertical: compact ? 10 : 12,
+      ),
+    );
+
     return RefreshIndicator(
       onRefresh: _loadTerms,
       child: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+        padding: pageContentPadding(context),
         children: [
           SurfaceCard(
+            padding: EdgeInsets.all(compact ? 12 : 14),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                SectionHeading(
-                  title: _screenTitle,
-                  subtitle: _screenSubtitle,
-                  trailing: Wrap(
-                    spacing: 12,
-                    runSpacing: 12,
-                    children: [
-                      FilledButton.tonalIcon(
-                        onPressed: _loadTerms,
-                        icon: const Icon(Icons.refresh_rounded),
-                        label: const Text('刷新'),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    FilledButton.tonalIcon(
+                      onPressed: _loadTerms,
+                      style: toolbarButtonStyle,
+                      icon: const Icon(Icons.refresh_rounded),
+                      label: const Text('刷新'),
+                    ),
+                    FilledButton.icon(
+                      onPressed: () => _openEditor(),
+                      style: toolbarButtonStyle,
+                      icon: Icon(
+                        _isCategory
+                            ? Icons.create_new_folder_rounded
+                            : Icons.sell_rounded,
                       ),
-                      FilledButton.icon(
-                        onPressed: () => _openEditor(),
-                        icon: Icon(
-                          _isCategory
-                              ? Icons.create_new_folder_rounded
-                              : Icons.sell_rounded,
-                        ),
-                        label: Text(_createLabel),
-                      ),
-                    ],
-                  ),
+                      label: Text(_createLabel),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 18),
+                SizedBox(height: compact ? 10 : 12),
                 SegmentedButton<_TaxonomyKind>(
                   segments: const [
                     ButtonSegment<_TaxonomyKind>(
@@ -248,64 +249,43 @@ class _TaxonomiesScreenState extends State<TaxonomiesScreen> {
                     _switchKind(selection.first);
                   },
                 ),
-                const SizedBox(height: 18),
+                SizedBox(height: compact ? 10 : 12),
                 LayoutBuilder(
                   builder: (context, constraints) {
-                    final stacked = constraints.maxWidth < 720;
+                    final stacked = constraints.maxWidth < 860;
                     final searchField = TextField(
                       controller: _searchController,
                       textInputAction: TextInputAction.search,
                       onSubmitted: (_) => _submitSearch(),
                       decoration: InputDecoration(
-                        labelText: _isCategory ? '搜索分类' : '搜索标签',
-                        hintText: _isCategory
-                            ? '按名称、描述或 slug 搜索'
-                            : '按名称或 slug 搜索',
+                        isDense: true,
+                        hintText: _isCategory ? '搜索分类' : '搜索标签',
                         prefixIcon: const Icon(Icons.search_rounded),
+                        suffixIcon: IconButton(
+                          onPressed: _submitSearch,
+                          tooltip: '搜索',
+                          icon: const Icon(Icons.arrow_forward_rounded),
+                        ),
                       ),
                     );
 
                     if (stacked) {
                       return Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          searchField,
-                          const SizedBox(height: 12),
-                          FilledButton(
-                            onPressed: _submitSearch,
-                            child: const Text('搜索'),
-                          ),
-                        ],
+                        children: [searchField],
                       );
                     }
 
-                    return Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(child: searchField),
-                        const SizedBox(width: 12),
-                        FilledButton(
-                          onPressed: _submitSearch,
-                          child: const Text('搜索'),
-                        ),
-                      ],
-                    );
+                    return Row(children: [Expanded(child: searchField)]);
                   },
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  '当前共 $_total 项，第 $_page / $_totalPages 页',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodyMedium?.copyWith(color: AppTheme.textMuted),
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: compact ? 12 : 16),
           if (_message != null) ...[
             InfoBanner(message: _message!, isError: _isError),
-            const SizedBox(height: 16),
+            SizedBox(height: compact ? 12 : 16),
           ],
           if (_loading)
             BootPanel(
@@ -322,7 +302,7 @@ class _TaxonomiesScreenState extends State<TaxonomiesScreen> {
           else
             ..._items.map(
               (term) => Padding(
-                padding: const EdgeInsets.only(bottom: 14),
+                padding: EdgeInsets.only(bottom: compact ? 10 : 14),
                 child: _TaxonomyCard(
                   kind: _kind,
                   term: term,
@@ -331,7 +311,7 @@ class _TaxonomiesScreenState extends State<TaxonomiesScreen> {
                 ),
               ),
             ),
-          const SizedBox(height: 4),
+          SizedBox(height: compact ? 2 : 4),
           PaginationCard(
             currentPage: _page,
             totalPages: _totalPages,
@@ -371,67 +351,51 @@ class _TaxonomyCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final compact = isCompactLayout(context);
+    final title =
+        term.name.isEmpty ? (_isCategory ? '未命名分类' : '未命名标签') : term.name;
     return SurfaceCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      padding: EdgeInsets.symmetric(
+        horizontal: compact ? 12 : 14,
+        vertical: compact ? 10 : 12,
+      ),
+      child: Row(
         children: [
-          Wrap(
-            spacing: 10,
-            runSpacing: 10,
-            children: [
-              _TermBadge(
-                label: _isCategory ? '分类' : '标签',
-                tint: _isCategory ? const Color(0xFF21544B) : AppTheme.accent,
-              ),
-              _TermBadge(label: '${term.count} 篇', tint: AppTheme.inkPanel),
-              if (_isCategory)
-                _TermBadge(
-                  label: term.parent > 0 ? '父级 ${term.parent}' : '顶级',
-                  tint: AppTheme.warning,
-                ),
-            ],
+          _TermBadge(
+            label: _isCategory ? '分类' : '标签',
+            tint: _isCategory ? const Color(0xFF21544B) : AppTheme.accent,
           ),
-          const SizedBox(height: 14),
-          Text(
-            term.name.isEmpty ? (_isCategory ? '未命名分类' : '未命名标签') : term.name,
-            style: Theme.of(context).textTheme.titleLarge,
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              '$title · ${term.count} 篇',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+            ),
           ),
-          const SizedBox(height: 8),
-          Text(
-            term.description.isEmpty
-                ? (_isCategory ? '这个分类还没有说明。' : '这个标签还没有说明。')
-                : term.description,
-            style: Theme.of(
-              context,
-            ).textTheme.bodyMedium?.copyWith(color: AppTheme.textMuted),
+          if (_isCategory && term.parent > 0) ...[
+            const SizedBox(width: 8),
+            Icon(
+              Icons.subdirectory_arrow_right_rounded,
+              size: 16,
+              color: AppTheme.textMuted,
+            ),
+          ],
+          const SizedBox(width: 4),
+          IconButton(
+            onPressed: onEdit,
+            tooltip: _isCategory ? '编辑分类' : '编辑标签',
+            icon: const Icon(Icons.edit_rounded),
+            visualDensity: VisualDensity.compact,
           ),
-          const SizedBox(height: 14),
-          Wrap(
-            spacing: 12,
-            runSpacing: 12,
-            children: [
-              Text(
-                term.slug.isEmpty ? '未设置 slug' : '/${term.slug}',
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Wrap(
-            spacing: 10,
-            runSpacing: 10,
-            children: [
-              OutlinedButton.icon(
-                onPressed: onEdit,
-                icon: const Icon(Icons.edit_rounded),
-                label: const Text('编辑'),
-              ),
-              FilledButton.tonalIcon(
-                onPressed: onDelete,
-                icon: const Icon(Icons.delete_outline_rounded),
-                label: const Text('删除'),
-              ),
-            ],
+          IconButton(
+            onPressed: onDelete,
+            tooltip: _isCategory ? '删除分类' : '删除标签',
+            icon: const Icon(Icons.delete_outline_rounded),
+            visualDensity: VisualDensity.compact,
           ),
         ],
       ),
@@ -448,7 +412,7 @@ class _TermBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
         color: tint.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(999),
