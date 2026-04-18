@@ -163,7 +163,7 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'CFBlog Flutter',
+                      'CFBlog APP',
                       style: (compact
                               ? Theme.of(context).textTheme.titleLarge
                               : Theme.of(context).textTheme.headlineSmall)
@@ -171,7 +171,7 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      '输入域名，直接进入工作台。',
+                      '你好,让我们开始写博客吧',
                       style: Theme.of(
                         context,
                       ).textTheme.bodySmall?.copyWith(color: AppTheme.textMuted),
@@ -186,9 +186,9 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
             spacing: 8,
             runSpacing: 8,
             children: const [
-              _IntroPill(icon: Icons.public_rounded, label: '域名直连'),
-              _IntroPill(icon: Icons.lock_rounded, label: '自动补全 HTTPS'),
-              _IntroPill(icon: Icons.devices_rounded, label: '跨端一致'),
+              _IntroPill(icon: Icons.public_rounded),
+              _IntroPill(icon: Icons.lock_rounded),
+              _IntroPill(icon: Icons.devices_rounded),
             ],
           ),
         ],
@@ -372,33 +372,24 @@ String _displayDomainInput(String value) {
 }
 
 class _IntroPill extends StatelessWidget {
-  const _IntroPill({required this.icon, required this.label});
+  const _IntroPill({required this.icon});
 
   final IconData icon;
-  final String label;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      width: 36,
+      height: 36,
       decoration: BoxDecoration(
         color: AppTheme.surfaceMuted,
         borderRadius: BorderRadius.circular(999),
         border: Border.all(color: AppTheme.border),
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 15, color: AppTheme.textMuted),
-          const SizedBox(width: 6),
-          Text(
-            label,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: AppTheme.text,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ],
+      child: Icon(
+        icon,
+        size: 16,
+        color: AppTheme.textMuted,
       ),
     );
   }

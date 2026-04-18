@@ -24,7 +24,7 @@ class CfblogApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'CFBlog Flutter',
+      title: 'CFBlog APP',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light(),
       home: const _AppBootstrapper(),
@@ -452,7 +452,7 @@ class _Sidebar extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'CFBlog Flutter',
+              'CFBlog APP',
               style: theme.textTheme.headlineSmall?.copyWith(
                 color: Colors.white,
                 fontWeight: FontWeight.w700,
