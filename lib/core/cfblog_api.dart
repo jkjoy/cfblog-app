@@ -6,6 +6,7 @@ import 'package:http_parser/http_parser.dart';
 
 import 'api_cache_store.dart';
 import 'formatters.dart';
+import 'json_helpers.dart';
 import 'media_upload.dart';
 import 'models.dart';
 
@@ -71,23 +72,10 @@ class CfblogApi {
 
     final streamed = await _client.send(request);
     final response = await http.Response.fromStream(streamed);
-    Object? payload;
-
-    if (response.body.isNotEmpty) {
-      try {
-        payload = jsonDecode(response.body);
-      } catch (_) {
-        payload = response.body;
-      }
-    }
+    final payload = _decodePayload(response.body);
 
     if (response.statusCode < 200 || response.statusCode >= 300) {
-      final message = switch (payload) {
-        {'message': final String message} => message,
-        {'error': final String error} => error,
-        _ => 'Request failed with status ${response.statusCode}',
-      };
-      throw Exception(message);
+      throw Exception(_extractErrorMessage(payload, response.statusCode));
     }
 
     return _ApiResponse(
@@ -206,6 +194,29 @@ class CfblogApi {
     );
   }
 
+  Future<PagedResponse<T>> _listCached<T>(
+    String path, {
+    Map<String, dynamic>? query,
+    ApiRoot root = ApiRoot.v2,
+    bool refresh = false,
+    required T Function(Map<String, dynamic> entry) fromJson,
+  }) async {
+    final result = await _requestCached<List<T>>(
+      path,
+      query: query,
+      root: root,
+      refresh: refresh,
+      decoder: (json) =>
+          _asList(json).map((entry) => fromJson(_asMap(entry))).toList(),
+    );
+    return PagedResponse<T>(
+      items: result.data,
+      total: int.tryParse(result.headers['x-wp-total'] ?? '') ??
+          result.data.length,
+      totalPages: int.tryParse(result.headers['x-wp-totalpages'] ?? '') ?? 1,
+    );
+  }
+
   Future<DiscoveryInfo> getDiscovery() async {
     final result = await _request(
       '/',
@@ -248,8 +259,8 @@ class CfblogApi {
     String search = '',
     String status = 'publish',
     bool refresh = false,
-  }) async {
-    final result = await _requestCached<List<WpPost>>(
+  }) {
+    return _listCached<WpPost>(
       '/posts',
       query: {
         'page': page,
@@ -258,15 +269,7 @@ class CfblogApi {
         'status': status,
       },
       refresh: refresh,
-      decoder: (json) =>
-          _asList(json).map((entry) => WpPost.fromJson(_asMap(entry))).toList(),
-    );
-    return PagedResponse<WpPost>(
-      items: result.data,
-      total:
-          int.tryParse(result.headers['x-wp-total'] ?? '') ??
-          result.data.length,
-      totalPages: int.tryParse(result.headers['x-wp-totalpages'] ?? '') ?? 1,
+      fromJson: WpPost.fromJson,
     );
   }
 
@@ -275,20 +278,12 @@ class CfblogApi {
     int perPage = 12,
     String status = 'all',
     bool refresh = false,
-  }) async {
-    final result = await _requestCached<List<WpPost>>(
+  }) {
+    return _listCached<WpPost>(
       '/pages',
       query: {'page': page, 'per_page': perPage, 'status': status},
       refresh: refresh,
-      decoder: (json) =>
-          _asList(json).map((entry) => WpPost.fromJson(_asMap(entry))).toList(),
-    );
-    return PagedResponse<WpPost>(
-      items: result.data,
-      total:
-          int.tryParse(result.headers['x-wp-total'] ?? '') ??
-          result.data.length,
-      totalPages: int.tryParse(result.headers['x-wp-totalpages'] ?? '') ?? 1,
+      fromJson: WpPost.fromJson,
     );
   }
 
@@ -313,20 +308,12 @@ class CfblogApi {
     int perPage = 100,
     String search = '',
     bool refresh = false,
-  }) async {
-    final result = await _requestCached<List<WpTerm>>(
+  }) {
+    return _listCached<WpTerm>(
       '/categories',
       query: {'page': page, 'per_page': perPage, 'search': search},
       refresh: refresh,
-      decoder: (json) =>
-          _asList(json).map((entry) => WpTerm.fromJson(_asMap(entry))).toList(),
-    );
-    return PagedResponse<WpTerm>(
-      items: result.data,
-      total:
-          int.tryParse(result.headers['x-wp-total'] ?? '') ??
-          result.data.length,
-      totalPages: int.tryParse(result.headers['x-wp-totalpages'] ?? '') ?? 1,
+      fromJson: WpTerm.fromJson,
     );
   }
 
@@ -335,20 +322,12 @@ class CfblogApi {
     int perPage = 100,
     String search = '',
     bool refresh = false,
-  }) async {
-    final result = await _requestCached<List<WpTerm>>(
+  }) {
+    return _listCached<WpTerm>(
       '/tags',
       query: {'page': page, 'per_page': perPage, 'search': search},
       refresh: refresh,
-      decoder: (json) =>
-          _asList(json).map((entry) => WpTerm.fromJson(_asMap(entry))).toList(),
-    );
-    return PagedResponse<WpTerm>(
-      items: result.data,
-      total:
-          int.tryParse(result.headers['x-wp-total'] ?? '') ??
-          result.data.length,
-      totalPages: int.tryParse(result.headers['x-wp-totalpages'] ?? '') ?? 1,
+      fromJson: WpTerm.fromJson,
     );
   }
 
@@ -429,20 +408,12 @@ class CfblogApi {
     int perPage = 12,
     String visible = 'yes',
     bool refresh = false,
-  }) async {
-    final result = await _requestCached<List<WpLink>>(
+  }) {
+    return _listCached<WpLink>(
       '/links',
       query: {'page': page, 'per_page': perPage, 'visible': visible},
       refresh: refresh,
-      decoder: (json) =>
-          _asList(json).map((entry) => WpLink.fromJson(_asMap(entry))).toList(),
-    );
-    return PagedResponse<WpLink>(
-      items: result.data,
-      total:
-          int.tryParse(result.headers['x-wp-total'] ?? '') ??
-          result.data.length,
-      totalPages: int.tryParse(result.headers['x-wp-totalpages'] ?? '') ?? 1,
+      fromJson: WpLink.fromJson,
     );
   }
 
@@ -526,8 +497,8 @@ class CfblogApi {
     String search = '',
     String role = '',
     bool refresh = false,
-  }) async {
-    final result = await _requestCached<List<SessionUser>>(
+  }) {
+    return _listCached<SessionUser>(
       '/users',
       query: {
         'page': page,
@@ -536,16 +507,7 @@ class CfblogApi {
         'role': role,
       },
       refresh: refresh,
-      decoder: (json) => _asList(
-        json,
-      ).map((entry) => SessionUser.fromJson(_asMap(entry))).toList(),
-    );
-    return PagedResponse<SessionUser>(
-      items: result.data,
-      total:
-          int.tryParse(result.headers['x-wp-total'] ?? '') ??
-          result.data.length,
-      totalPages: int.tryParse(result.headers['x-wp-totalpages'] ?? '') ?? 1,
+      fromJson: SessionUser.fromJson,
     );
   }
 
@@ -653,21 +615,12 @@ class CfblogApi {
     int page = 1,
     int perPage = 12,
     bool refresh = false,
-  }) async {
-    final result = await _requestCached<List<WpMedia>>(
+  }) {
+    return _listCached<WpMedia>(
       '/media',
       query: {'page': page, 'per_page': perPage},
       refresh: refresh,
-      decoder: (json) => _asList(
-        json,
-      ).map((entry) => WpMedia.fromJson(_asMap(entry))).toList(),
-    );
-    return PagedResponse<WpMedia>(
-      items: result.data,
-      total:
-          int.tryParse(result.headers['x-wp-total'] ?? '') ??
-          result.data.length,
-      totalPages: int.tryParse(result.headers['x-wp-totalpages'] ?? '') ?? 1,
+      fromJson: WpMedia.fromJson,
     );
   }
 
@@ -735,23 +688,10 @@ class CfblogApi {
 
     final streamed = await _client.send(request);
     final response = await http.Response.fromStream(streamed);
-    Object? payload;
-
-    if (response.body.isNotEmpty) {
-      try {
-        payload = jsonDecode(response.body);
-      } catch (_) {
-        payload = response.body;
-      }
-    }
+    final payload = _decodePayload(response.body);
 
     if (response.statusCode < 200 || response.statusCode >= 300) {
-      final message = switch (payload) {
-        {'message': final String message} => message,
-        {'error': final String error} => error,
-        _ => 'Request failed with status ${response.statusCode}',
-      };
-      throw Exception(message);
+      throw Exception(_extractErrorMessage(payload, response.statusCode));
     }
 
     await _invalidateSessionCache();
@@ -775,21 +715,12 @@ class CfblogApi {
     int perPage = 12,
     String status = 'all',
     bool refresh = false,
-  }) async {
-    final result = await _requestCached<List<WpMoment>>(
+  }) {
+    return _listCached<WpMoment>(
       '/moments',
       query: {'page': page, 'per_page': perPage, 'status': status},
       refresh: refresh,
-      decoder: (json) => _asList(
-        json,
-      ).map((entry) => WpMoment.fromJson(_asMap(entry))).toList(),
-    );
-    return PagedResponse<WpMoment>(
-      items: result.data,
-      total:
-          int.tryParse(result.headers['x-wp-total'] ?? '') ??
-          result.data.length,
-      totalPages: int.tryParse(result.headers['x-wp-totalpages'] ?? '') ?? 1,
+      fromJson: WpMoment.fromJson,
     );
   }
 
@@ -825,21 +756,12 @@ class CfblogApi {
     int perPage = 12,
     String status = 'all',
     bool refresh = false,
-  }) async {
-    final result = await _requestCached<List<WpComment>>(
+  }) {
+    return _listCached<WpComment>(
       '/comments',
       query: {'page': page, 'per_page': perPage, 'status': status},
       refresh: refresh,
-      decoder: (json) => _asList(
-        json,
-      ).map((entry) => WpComment.fromJson(_asMap(entry))).toList(),
-    );
-    return PagedResponse<WpComment>(
-      items: result.data,
-      total:
-          int.tryParse(result.headers['x-wp-total'] ?? '') ??
-          result.data.length,
-      totalPages: int.tryParse(result.headers['x-wp-totalpages'] ?? '') ?? 1,
+      fromJson: WpComment.fromJson,
     );
   }
 
@@ -848,21 +770,12 @@ class CfblogApi {
     int perPage = 12,
     String status = 'all',
     bool refresh = false,
-  }) async {
-    final result = await _requestCached<List<WpComment>>(
+  }) {
+    return _listCached<WpComment>(
       '/moments/comments/all',
       query: {'page': page, 'per_page': perPage, 'status': status},
       refresh: refresh,
-      decoder: (json) => _asList(
-        json,
-      ).map((entry) => WpComment.fromJson(_asMap(entry))).toList(),
-    );
-    return PagedResponse<WpComment>(
-      items: result.data,
-      total:
-          int.tryParse(result.headers['x-wp-total'] ?? '') ??
-          result.data.length,
-      totalPages: int.tryParse(result.headers['x-wp-totalpages'] ?? '') ?? 1,
+      fromJson: WpComment.fromJson,
     );
   }
 
@@ -1011,19 +924,25 @@ class _ApiResponse<T> {
   final String rawBody;
 }
 
-Map<String, dynamic> _asMap(Object? value) {
-  if (value is Map<String, dynamic>) {
-    return value;
+Map<String, dynamic> _asMap(Object? value) => asJsonMap(value);
+
+List<Object?> _asList(Object? value) => asJsonList(value);
+
+Object? _decodePayload(String body) {
+  if (body.isEmpty) {
+    return null;
   }
-  if (value is Map) {
-    return value.map((key, entry) => MapEntry(key.toString(), entry));
+  try {
+    return jsonDecode(body);
+  } catch (_) {
+    return body;
   }
-  return const <String, dynamic>{};
 }
 
-List<Object?> _asList(Object? value) {
-  if (value is List) {
-    return value.cast<Object?>();
-  }
-  return const <Object?>[];
+String _extractErrorMessage(Object? payload, int statusCode) {
+  return switch (payload) {
+    {'message': final String message} => message,
+    {'error': final String error} => error,
+    _ => 'Request failed with status $statusCode',
+  };
 }

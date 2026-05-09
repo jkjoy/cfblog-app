@@ -1,5 +1,7 @@
 import 'package:flutter/foundation.dart';
 
+import 'json_helpers.dart';
+
 @immutable
 class AppConfig {
   const AppConfig({required this.baseUrl});
@@ -545,52 +547,16 @@ class DashboardSnapshot {
   final List<WpPost> recentPosts;
 }
 
-Map<String, dynamic> _asMap(Object? value) {
-  if (value is Map<String, dynamic>) {
-    return value;
-  }
-  if (value is Map) {
-    return value.map((key, entry) => MapEntry(key.toString(), entry));
-  }
-  return const <String, dynamic>{};
-}
+Map<String, dynamic> _asMap(Object? value) => asJsonMap(value);
 
-Map<String, String> _asStringMap(Object? value) {
-  return _asMap(
-    value,
-  ).map((key, entry) => MapEntry(key, entry?.toString() ?? ''));
-}
+Map<String, String> _asStringMap(Object? value) => asJsonStringMap(value);
 
-List<String> _asStringList(Object? value) {
-  if (value is List) {
-    return value.map((entry) => entry.toString()).toList();
-  }
-  return const <String>[];
-}
+List<String> _asStringList(Object? value) => asJsonStringList(value);
 
-String _asString(Object? value) => value?.toString() ?? '';
+String _asString(Object? value) => asJsonString(value);
 
-int _asInt(Object? value) {
-  if (value is int) {
-    return value;
-  }
-  return int.tryParse(value?.toString() ?? '') ?? 0;
-}
+int _asInt(Object? value) => asJsonInt(value);
 
-bool _asBool(Object? value) {
-  if (value is bool) {
-    return value;
-  }
-  final raw = value?.toString().toLowerCase() ?? '';
-  return raw == 'true' || raw == '1';
-}
+bool _asBool(Object? value) => asJsonBool(value);
 
-List<int> _asIntList(Object? value) {
-  if (value is List) {
-    return value
-        .map((entry) => _asInt(entry))
-        .where((entry) => entry > 0)
-        .toList();
-  }
-  return const <int>[];
-}
+List<int> _asIntList(Object? value) => asJsonIntList(value);

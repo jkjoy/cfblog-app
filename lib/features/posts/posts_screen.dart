@@ -282,10 +282,7 @@ class _PostCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final compact = isCompactLayout(context);
     final title = stripHtml(post.title).isEmpty ? '未命名文章' : stripHtml(post.title);
-    final timeLabel = _formatPostListTimestamp(
-      post.modified.isEmpty ? post.date : post.modified,
-      compact: compact,
-    );
+    final rawTime = post.modified.isEmpty ? post.date : post.modified;
     return SurfaceCard(
       padding: EdgeInsets.symmetric(
         horizontal: compact ? 12 : 14,
@@ -294,12 +291,7 @@ class _PostCard extends StatelessWidget {
       child: LayoutBuilder(
         builder: (context, constraints) {
           final useShortTime = compact || constraints.maxWidth < 640;
-          final timestamp = useShortTime
-              ? _formatPostListTimestamp(
-                  post.modified.isEmpty ? post.date : post.modified,
-                  compact: true,
-                )
-              : timeLabel;
+          final timestamp = formatCompactDate(rawTime, withYear: !useShortTime);
           final timeWidth = useShortTime ? 74.0 : 124.0;
 
           return Row(
@@ -383,24 +375,3 @@ class _Badge extends StatelessWidget {
   }
 }
 
-String _formatPostListTimestamp(String raw, {required bool compact}) {
-  if (raw.isEmpty) {
-    return '未设置';
-  }
-
-  final date = DateTime.tryParse(raw)?.toLocal();
-  if (date == null) {
-    return raw;
-  }
-
-  final month = date.month.toString().padLeft(2, '0');
-  final day = date.day.toString().padLeft(2, '0');
-  final hour = date.hour.toString().padLeft(2, '0');
-  final minute = date.minute.toString().padLeft(2, '0');
-
-  if (compact) {
-    return '$month-$day $hour:$minute';
-  }
-
-  return '${date.year}-$month-$day $hour:$minute';
-}

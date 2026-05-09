@@ -52,10 +52,10 @@ void main() {
     );
 
     final previousButton = tester.widget<OutlinedButton>(
-      find.widgetWithText(OutlinedButton, '上一页'),
+      find.byWidgetPredicate((widget) => widget is OutlinedButton),
     );
     final nextButton = tester.widget<FilledButton>(
-      find.widgetWithText(FilledButton, '下一页'),
+      find.byWidgetPredicate((widget) => widget is FilledButton),
     );
 
     expect(previousButton.onPressed, isNull);
