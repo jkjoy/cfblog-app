@@ -232,52 +232,39 @@ class _MediaScreenState extends State<MediaScreen> {
   @override
   Widget build(BuildContext context) {
     final compact = isCompactLayout(context);
-    final toolbarButtonStyle = FilledButton.styleFrom(
-      visualDensity: VisualDensity.compact,
-      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-      padding: EdgeInsets.symmetric(
-        horizontal: compact ? 12 : 14,
-        vertical: compact ? 10 : 12,
-      ),
-    );
 
     return RefreshIndicator(
       onRefresh: () => _loadMedia(refresh: true),
       child: ListView(
         padding: pageContentPadding(context),
         children: [
-          SurfaceCard(
-            padding: EdgeInsets.all(compact ? 12 : 14),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    FilledButton.tonalIcon(
-                      onPressed: () => _loadMedia(refresh: true),
-                      style: toolbarButtonStyle,
-                      icon: const Icon(Icons.refresh_rounded),
-                      label: const Text('刷新'),
-                    ),
-                  ],
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              TextButton.icon(
+                onPressed: () => _loadMedia(refresh: true),
+                icon: const Icon(Icons.refresh_rounded, size: 16),
+                label: const Text('刷新'),
+                style: TextButton.styleFrom(
+                  foregroundColor: AppTheme.textMuted,
+                  minimumSize: const Size(0, 36),
                 ),
-                SizedBox(height: compact ? 10 : 12),
-                _UploadCard(
-                  selectedFile: _selectedFile,
-                  titleController: _titleController,
-                  altController: _altController,
-                  captionController: _captionController,
-                  descriptionController: _descriptionController,
-                  uploading: _uploading,
-                  onChooseFile: _chooseFile,
-                  onUpload: _upload,
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
           SizedBox(height: compact ? 12 : 16),
+          _UploadCard(
+            selectedFile: _selectedFile,
+            titleController: _titleController,
+            altController: _altController,
+            captionController: _captionController,
+            descriptionController: _descriptionController,
+            uploading: _uploading,
+            onChooseFile: _chooseFile,
+            onUpload: _upload,
+          ),
+          SizedBox(height: compact ? 16 : 24),
           if (_message != null) ...[
             InfoBanner(message: _message!, isError: _isError),
             SizedBox(height: compact ? 12 : 16),
@@ -292,7 +279,7 @@ class _MediaScreenState extends State<MediaScreen> {
           else
             ..._items.map(
               (item) => Padding(
-                padding: EdgeInsets.only(bottom: compact ? 10 : 14),
+                padding: EdgeInsets.only(bottom: compact ? 10 : 12),
                 child: _MediaCard(
                   item: item,
                   onEdit: () => _openEdit(item),
@@ -300,7 +287,7 @@ class _MediaScreenState extends State<MediaScreen> {
                 ),
               ),
             ),
-          SizedBox(height: compact ? 2 : 4),
+          SizedBox(height: compact ? 4 : 8),
           PaginationCard(
             currentPage: _page,
             totalPages: _totalPages,
@@ -574,53 +561,55 @@ class _MediaCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final compact = isCompactLayout(context);
+    final theme = Theme.of(context);
     final title = stripHtml(item.title).isEmpty ? item.slug : stripHtml(item.title);
     return SurfaceCard(
       padding: EdgeInsets.symmetric(
-        horizontal: compact ? 12 : 14,
-        vertical: compact ? 10 : 12,
+        horizontal: compact ? 16 : 20,
+        vertical: compact ? 14 : 16,
       ),
       child: Row(
         children: [
           _MediaPreview(item: item),
-          const SizedBox(width: 10),
-          _Tag(label: item.mediaType.isEmpty ? '媒体' : item.mediaType),
-          const SizedBox(width: 10),
+          const SizedBox(width: 12),
           Expanded(
-            child: Text(
-              title.isEmpty ? '未命名媒体' : title,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: Theme.of(
-                context,
-              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title.isEmpty ? '未命名媒体' : title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  _mediaMeta(item),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: AppTheme.textMuted,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
             ),
           ),
-          const SizedBox(width: 10),
-          SizedBox(
-            width: compact ? 120 : 168,
-            child: Text(
-              _mediaMeta(item),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              textAlign: TextAlign.right,
-              style: Theme.of(
-                context,
-              ).textTheme.bodySmall?.copyWith(color: AppTheme.textMuted),
-            ),
-          ),
-          const SizedBox(width: 4),
           IconButton(
             onPressed: onEdit,
             tooltip: '编辑媒体',
-            icon: const Icon(Icons.edit_rounded),
-            visualDensity: VisualDensity.compact,
+            iconSize: 16,
+            icon: const Icon(Icons.edit_outlined),
+            style: IconButton.styleFrom(foregroundColor: AppTheme.textMuted),
           ),
           IconButton(
             onPressed: onDelete,
             tooltip: '删除媒体',
+            iconSize: 16,
             icon: const Icon(Icons.delete_outline_rounded),
-            visualDensity: VisualDensity.compact,
+            style: IconButton.styleFrom(foregroundColor: AppTheme.textMuted),
           ),
         ],
       ),
@@ -637,7 +626,7 @@ class _MediaPreview extends StatelessWidget {
   Widget build(BuildContext context) {
     final preview = item.isImage
         ? ClipRRect(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(10),
             child: Image.network(
               item.sourceUrl,
               fit: BoxFit.cover,
@@ -648,12 +637,11 @@ class _MediaPreview extends StatelessWidget {
         : const _MediaFallback();
 
     return Container(
-      width: 46,
-      height: 46,
+      width: 40,
+      height: 40,
       decoration: BoxDecoration(
         color: AppTheme.surfaceMuted,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppTheme.border),
+        borderRadius: BorderRadius.circular(10),
       ),
       clipBehavior: Clip.antiAlias,
       child: preview,
@@ -666,7 +654,7 @@ class _MediaFallback extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
+    return Center(
       child: Icon(
         Icons.insert_drive_file_rounded,
         size: 22,
@@ -676,31 +664,9 @@ class _MediaFallback extends StatelessWidget {
   }
 }
 
-class _Tag extends StatelessWidget {
-  const _Tag({required this.label});
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: AppTheme.surfaceMuted,
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Text(
-        label,
-        style: Theme.of(
-          context,
-        ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w700),
-      ),
-    );
-  }
-}
-
 String _mediaMeta(WpMedia item) {
   final parts = <String>[
+    item.mediaType.isEmpty ? '媒体' : item.mediaType,
     formatCompactDate(item.modified.isEmpty ? item.date : item.modified),
   ];
   if (item.mediaDetails?.fileSize case final int size when size > 0) {
@@ -789,7 +755,7 @@ class _MediaEditSheetState extends State<_MediaEditSheet> {
     return Padding(
       padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
       child: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           color: AppTheme.surface,
           borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
         ),

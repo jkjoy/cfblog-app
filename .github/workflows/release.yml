@@ -8,6 +8,7 @@ on:
 
 permissions:
   contents: write
+  actions: write
 
 jobs:
   release:
@@ -72,3 +73,12 @@ jobs:
             --title "${{ steps.version.outputs.tag }}" \
             --generate-notes \
             $EXTRA_ARGS
+
+      - name: Trigger build workflow
+        if: steps.tag_check.outputs.exists != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh workflow run build-app.yml \
+            --ref "${{ steps.version.outputs.tag }}" \
+            -f platform=all

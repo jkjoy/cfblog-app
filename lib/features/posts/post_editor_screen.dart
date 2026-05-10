@@ -1166,7 +1166,7 @@ class _PostMediaRow extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 8),
-            const Icon(Icons.chevron_right_rounded, color: AppTheme.textMuted),
+            Icon(Icons.chevron_right_rounded, color: AppTheme.textMuted),
           ],
         ),
       ),
@@ -1211,7 +1211,7 @@ class _PostMediaFallback extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppTheme.border),
       ),
-      child: const Icon(
+      child: Icon(
         Icons.insert_drive_file_rounded,
         size: 20,
         color: AppTheme.textMuted,

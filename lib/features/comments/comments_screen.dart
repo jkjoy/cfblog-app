@@ -198,74 +198,56 @@ class _CommentsScreenState extends State<CommentsScreen> {
   Widget build(BuildContext context) {
     final isPost = _scope == CommentScope.post;
     final compact = isCompactLayout(context);
-    final toolbarButtonStyle = FilledButton.styleFrom(
-      visualDensity: VisualDensity.compact,
-      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-      padding: EdgeInsets.symmetric(
-        horizontal: compact ? 12 : 14,
-        vertical: compact ? 10 : 12,
-      ),
-    );
 
     return RefreshIndicator(
       onRefresh: () => _loadComments(refresh: true),
       child: ListView(
         padding: pageContentPadding(context),
         children: [
-          SurfaceCard(
-            padding: EdgeInsets.all(compact ? 12 : 14),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    FilledButton.tonalIcon(
-                      onPressed: () => _loadComments(refresh: true),
-                      style: toolbarButtonStyle,
-                      icon: const Icon(Icons.refresh_rounded),
-                      label: const Text('刷新'),
-                    ),
-                  ],
-                ),
-                SizedBox(height: compact ? 10 : 12),
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: SelectionChipBar<CommentScope>(
-                    items: CommentScope.values,
-                    value: _scope,
-                    labelBuilder: (scope) =>
-                        scope == CommentScope.post ? '文章评论' : '动态评论',
-                    onSelected: (scope) {
-                      setState(() {
-                        _scope = scope;
-                        _page = 1;
-                      });
-                      _loadComments();
-                    },
-                  ),
-                ),
-                SizedBox(height: compact ? 10 : 12),
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: SelectionChipBar<String>(
-                    items: _statusOptions,
-                    value: _status,
-                    labelBuilder: commentStatusLabel,
-                    onSelected: (status) {
-                      setState(() {
-                        _status = status;
-                        _page = 1;
-                      });
-                      _loadComments();
-                    },
-                  ),
-                ),
-              ],
+          TextButton.icon(
+            onPressed: () => _loadComments(refresh: true),
+            icon: const Icon(Icons.refresh_rounded, size: 16),
+            label: const Text('刷新'),
+            style: TextButton.styleFrom(
+              foregroundColor: AppTheme.textMuted,
+              minimumSize: const Size(0, 36),
+              alignment: Alignment.centerLeft,
             ),
           ),
           SizedBox(height: compact ? 12 : 16),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: SelectionChipBar<CommentScope>(
+              items: CommentScope.values,
+              value: _scope,
+              labelBuilder: (scope) =>
+                  scope == CommentScope.post ? '文章评论' : '动态评论',
+              onSelected: (scope) {
+                setState(() {
+                  _scope = scope;
+                  _page = 1;
+                });
+                _loadComments();
+              },
+            ),
+          ),
+          SizedBox(height: compact ? 10 : 12),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: SelectionChipBar<String>(
+              items: _statusOptions,
+              value: _status,
+              labelBuilder: commentStatusLabel,
+              onSelected: (status) {
+                setState(() {
+                  _status = status;
+                  _page = 1;
+                });
+                _loadComments();
+              },
+            ),
+          ),
+          SizedBox(height: compact ? 16 : 24),
           if (_message != null) ...[
             InfoBanner(message: _message!, isError: _isError),
             SizedBox(height: compact ? 12 : 16),
@@ -280,7 +262,7 @@ class _CommentsScreenState extends State<CommentsScreen> {
           else
             ..._items.map(
               (item) => Padding(
-                padding: EdgeInsets.only(bottom: compact ? 10 : 14),
+                padding: EdgeInsets.only(bottom: compact ? 10 : 12),
                 child: _CommentCard(
                   comment: item,
                   scope: _scope,
@@ -292,7 +274,7 @@ class _CommentsScreenState extends State<CommentsScreen> {
                 ),
               ),
             ),
-          SizedBox(height: compact ? 2 : 4),
+          SizedBox(height: compact ? 4 : 8),
           PaginationCard(
             currentPage: _page,
             totalPages: _totalPages,
@@ -336,6 +318,7 @@ class _CommentCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final targetLabel = scope == CommentScope.post
         ? (comment.postTitle.isEmpty
               ? '文章 #${comment.post == 0 ? '-' : comment.post}'
@@ -344,125 +327,143 @@ class _CommentCard extends StatelessWidget {
     final compact = isCompactLayout(context);
     final author = comment.authorName.isEmpty ? '匿名用户' : comment.authorName;
     final content = stripHtml(comment.content);
-    final preview = content.isEmpty ? targetLabel : '$author · $content';
 
     return SurfaceCard(
       padding: EdgeInsets.symmetric(
-        horizontal: compact ? 12 : 14,
-        vertical: compact ? 10 : 12,
+        horizontal: compact ? 16 : 20,
+        vertical: compact ? 14 : 16,
       ),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final stacked = constraints.maxWidth < 900;
-          final actions = Row(
-            mainAxisSize: MainAxisSize.min,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
             children: [
-              IconButton(
-                onPressed: onApprove,
-                tooltip: '通过评论',
-                icon: const Icon(Icons.check_circle_outline_rounded),
-                visualDensity: VisualDensity.compact,
-              ),
-              IconButton(
-                onPressed: onPending,
-                tooltip: '标记待审',
-                icon: const Icon(Icons.schedule_rounded),
-                visualDensity: VisualDensity.compact,
-              ),
-              IconButton(
-                onPressed: onReply,
-                tooltip: '回复评论',
-                icon: const Icon(Icons.reply_rounded),
-                visualDensity: VisualDensity.compact,
-              ),
-              IconButton(
-                onPressed: onEdit,
-                tooltip: '编辑评论',
-                icon: const Icon(Icons.edit_rounded),
-                visualDensity: VisualDensity.compact,
-              ),
-              IconButton(
-                onPressed: onDelete,
-                tooltip: '删除评论',
-                icon: const Icon(Icons.delete_outline_rounded),
-                visualDensity: VisualDensity.compact,
-              ),
-            ],
-          );
-
-          final main = Row(
-            children: [
-              _CommentBadge(label: commentStatusLabel(comment.status)),
-              const SizedBox(width: 10),
               Expanded(
                 child: Text(
-                  preview,
+                  author,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
               ),
-              const SizedBox(width: 10),
-              SizedBox(
-                width: compact ? 122 : 180,
-                child: Text(
-                  '$targetLabel · ${formatCompactDate(comment.date)}',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  textAlign: TextAlign.right,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: AppTheme.textMuted,
-                  ),
+              Text(
+                formatCompactDate(comment.date),
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: AppTheme.textMuted,
+                  fontFeatures: const [FontFeature.tabularFigures()],
                 ),
               ),
             ],
-          );
-
-          if (stacked) {
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                main,
-                const SizedBox(height: 6),
-                Align(alignment: Alignment.centerRight, child: actions),
-              ],
-            );
-          }
-
-          return Row(
+          ),
+          const SizedBox(height: 8),
+          Text(
+            content.isEmpty ? '(空内容)' : content,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: AppTheme.text,
+              height: 1.45,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Row(
             children: [
-              Expanded(child: main),
-              const SizedBox(width: 4),
-              actions,
+              Expanded(
+                child: Wrap(
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: 8,
+                  runSpacing: 4,
+                  children: [
+                    Text(
+                      commentStatusLabel(comment.status),
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: _statusColor(comment.status),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    Text(
+                      '·',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: AppTheme.textMuted,
+                      ),
+                    ),
+                    ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 220),
+                      child: Text(
+                        targetLabel,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: AppTheme.textMuted,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              _CommentAction(
+                icon: Icons.check_circle_outline_rounded,
+                tooltip: '通过',
+                onTap: onApprove,
+              ),
+              _CommentAction(
+                icon: Icons.schedule_rounded,
+                tooltip: '待审',
+                onTap: onPending,
+              ),
+              _CommentAction(
+                icon: Icons.reply_rounded,
+                tooltip: '回复',
+                onTap: onReply,
+              ),
+              _CommentAction(
+                icon: Icons.edit_outlined,
+                tooltip: '编辑',
+                onTap: onEdit,
+              ),
+              _CommentAction(
+                icon: Icons.delete_outline_rounded,
+                tooltip: '删除',
+                onTap: onDelete,
+              ),
             ],
-          );
-        },
+          ),
+        ],
       ),
     );
   }
+
+  Color _statusColor(String status) {
+    return switch (status) {
+      'approved' => AppTheme.success,
+      'pending' => AppTheme.warning,
+      'spam' || 'trash' => AppTheme.danger,
+      _ => AppTheme.textMuted,
+    };
+  }
 }
 
-class _CommentBadge extends StatelessWidget {
-  const _CommentBadge({required this.label});
+class _CommentAction extends StatelessWidget {
+  const _CommentAction({
+    required this.icon,
+    required this.tooltip,
+    required this.onTap,
+  });
 
-  final String label;
+  final IconData icon;
+  final String tooltip;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: AppTheme.surfaceMuted,
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Text(
-        label,
-        style: Theme.of(
-          context,
-        ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w700),
-      ),
+    return IconButton(
+      onPressed: onTap,
+      tooltip: tooltip,
+      iconSize: 16,
+      icon: Icon(icon),
+      style: IconButton.styleFrom(foregroundColor: AppTheme.textMuted),
     );
   }
 }
@@ -606,7 +607,7 @@ class _CommentEditorSheetState extends State<_CommentEditorSheet> {
     return Padding(
       padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
       child: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           color: AppTheme.surface,
           borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
         ),
@@ -826,7 +827,7 @@ class _CommentReplySheetState extends State<_CommentReplySheet> {
     return Padding(
       padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
       child: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           color: AppTheme.surface,
           borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
         ),

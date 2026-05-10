@@ -5,6 +5,7 @@ import '../../core/formatters.dart';
 import '../../core/models.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/app_chrome.dart';
+import '../../widgets/theme_picker.dart';
 
 enum _SystemKind { users, settings }
 
@@ -38,7 +39,7 @@ class _SystemWorkspaceScreenState extends State<SystemWorkspaceScreen> {
       <String, TextEditingController>{};
   final Map<String, bool> _settingToggles = <String, bool>{};
 
-  _SystemKind _kind = _SystemKind.users;
+  _SystemKind _kind = _SystemKind.settings;
   bool _loading = true;
   bool _savingSettings = false;
   bool _isError = false;
@@ -338,155 +339,141 @@ class _SystemWorkspaceScreenState extends State<SystemWorkspaceScreen> {
       child: ListView(
         padding: pageContentPadding(context),
         children: [
-          SurfaceCard(
-            padding: EdgeInsets.all(compact ? 12 : 14),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    FilledButton.tonalIcon(
-                      onPressed: () => _loadCurrent(refresh: true),
-                      style: toolbarButtonStyle,
-                      icon: const Icon(Icons.refresh_rounded),
-                      label: const Text('刷新'),
-                    ),
-                    if (_isUsers)
-                      FilledButton.icon(
-                        onPressed: _isAdmin ? () => _openUserEditor() : null,
-                        style: toolbarButtonStyle,
-                        icon: const Icon(Icons.person_add_alt_1_rounded),
-                        label: const Text('新建用户'),
-                      )
-                    else
-                      FilledButton.icon(
-                        onPressed: _savingSettings || !_isAdmin
-                            ? null
-                            : _saveSettings,
-                        style: toolbarButtonStyle,
-                        icon: _savingSettings
-                            ? const SizedBox(
-                                width: 18,
-                                height: 18,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Colors.white,
-                                ),
-                              )
-                            : const Icon(Icons.save_rounded),
-                        label: Text(_savingSettings ? '保存中...' : '保存设置'),
-                      ),
-                  ],
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              TextButton.icon(
+                onPressed: () => _loadCurrent(refresh: true),
+                icon: const Icon(Icons.refresh_rounded, size: 16),
+                label: const Text('刷新'),
+                style: TextButton.styleFrom(
+                  foregroundColor: AppTheme.textMuted,
+                  minimumSize: const Size(0, 36),
                 ),
-                SizedBox(height: compact ? 10 : 12),
-                SegmentedButton<_SystemKind>(
-                  segments: const [
-                    ButtonSegment<_SystemKind>(
-                      value: _SystemKind.users,
-                      icon: Icon(Icons.people_alt_rounded),
-                      label: Text('用户'),
-                    ),
-                    ButtonSegment<_SystemKind>(
-                      value: _SystemKind.settings,
-                      icon: Icon(Icons.settings_suggest_rounded),
-                      label: Text('设置'),
-                    ),
-                  ],
-                  selected: {_kind},
-                  onSelectionChanged: (selection) {
-                    if (selection.isEmpty) {
-                      return;
-                    }
-                    _switchKind(selection.first);
-                  },
+              ),
+              if (_isUsers)
+                FilledButton.icon(
+                  onPressed: _isAdmin ? () => _openUserEditor() : null,
+                  style: toolbarButtonStyle,
+                  icon: const Icon(Icons.person_add_alt_1_outlined, size: 16),
+                  label: const Text('新建用户'),
+                )
+              else
+                FilledButton.icon(
+                  onPressed: _savingSettings || !_isAdmin
+                      ? null
+                      : _saveSettings,
+                  style: toolbarButtonStyle,
+                  icon: _savingSettings
+                      ? const SizedBox(
+                          width: 14,
+                          height: 14,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Icon(Icons.save_outlined, size: 16),
+                  label: Text(_savingSettings ? '保存中...' : '保存设置'),
                 ),
-                if (_isUsers) ...[
-                  SizedBox(height: compact ? 10 : 12),
-                  LayoutBuilder(
-                    builder: (context, constraints) {
-                      final stacked = constraints.maxWidth < 860;
-                      final searchField = TextField(
-                        controller: _searchController,
-                        textInputAction: TextInputAction.search,
-                        onSubmitted: (_) => _submitSearch(),
-                        decoration: InputDecoration(
-                          isDense: true,
-                          hintText: '搜索用户',
-                          prefixIcon: const Icon(Icons.search_rounded),
-                          suffixIcon: IconButton(
-                            onPressed: _submitSearch,
-                            tooltip: '搜索',
-                            icon: const Icon(Icons.arrow_forward_rounded),
-                          ),
-                        ),
-                      );
-
-                      final roleField = DropdownButtonFormField<String>(
-                        initialValue: _role,
-                        items: const [
-                          DropdownMenuItem(value: '', child: Text('全部角色')),
-                          DropdownMenuItem(
-                            value: 'administrator',
-                            child: Text('管理员'),
-                          ),
-                          DropdownMenuItem(value: 'editor', child: Text('编辑')),
-                          DropdownMenuItem(value: 'author', child: Text('作者')),
-                          DropdownMenuItem(
-                            value: 'contributor',
-                            child: Text('投稿者'),
-                          ),
-                          DropdownMenuItem(
-                            value: 'subscriber',
-                            child: Text('订阅者'),
-                          ),
-                        ],
-                        onChanged: (value) {
-                          setState(() {
-                            _role = value ?? '';
-                            _page = 1;
-                          });
-                          _loadUsers();
-                        },
-                        decoration: const InputDecoration(labelText: '角色筛选'),
-                      );
-
-                      if (stacked) {
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            searchField,
-                            SizedBox(height: compact ? 10 : 12),
-                            roleField,
-                          ],
-                        );
-                      }
-
-                      return Row(
-                        children: [
-                          Expanded(child: searchField),
-                          const SizedBox(width: 10),
-                          SizedBox(width: 180, child: roleField),
-                        ],
-                      );
-                    },
-                  ),
-                ] else ...[
-                  SizedBox(height: compact ? 10 : 12),
-                  Text(
-                    _isAdmin
-                        ? '当前账号拥有管理员权限，可以直接保存系统设置。'
-                        : '当前账号不是管理员，仅可查看公开或授权可见的设置字段。',
-                    style: Theme.of(
-                      context,
-                    ).textTheme.bodyMedium?.copyWith(color: AppTheme.textMuted),
-                  ),
-                ],
-              ],
-            ),
+            ],
           ),
           SizedBox(height: compact ? 12 : 16),
+          SegmentedButton<_SystemKind>(
+            segments: const [
+              ButtonSegment<_SystemKind>(
+                value: _SystemKind.settings,
+                icon: Icon(Icons.settings_suggest_outlined, size: 16),
+                label: Text('设置'),
+              ),
+              ButtonSegment<_SystemKind>(
+                value: _SystemKind.users,
+                icon: Icon(Icons.people_alt_outlined, size: 16),
+                label: Text('用户'),
+              ),
+            ],
+            selected: {_kind},
+            onSelectionChanged: (selection) {
+              if (selection.isEmpty) {
+                return;
+              }
+              _switchKind(selection.first);
+            },
+          ),
+          if (_isUsers) ...[
+            SizedBox(height: compact ? 12 : 16),
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final stacked = constraints.maxWidth < 860;
+                final searchField = TextField(
+                  controller: _searchController,
+                  textInputAction: TextInputAction.search,
+                  onSubmitted: (_) => _submitSearch(),
+                  decoration: InputDecoration(
+                    isDense: true,
+                    hintText: '搜索用户',
+                    prefixIcon: const Icon(Icons.search_rounded, size: 18),
+                    suffixIcon: IconButton(
+                      onPressed: _submitSearch,
+                      tooltip: '搜索',
+                      iconSize: 18,
+                      icon: const Icon(Icons.arrow_forward_rounded),
+                    ),
+                  ),
+                );
+
+                final roleField = DropdownButtonFormField<String>(
+                  initialValue: _role,
+                  items: const [
+                    DropdownMenuItem(value: '', child: Text('全部角色')),
+                    DropdownMenuItem(
+                      value: 'administrator',
+                      child: Text('管理员'),
+                    ),
+                    DropdownMenuItem(value: 'editor', child: Text('编辑')),
+                    DropdownMenuItem(value: 'author', child: Text('作者')),
+                    DropdownMenuItem(
+                      value: 'contributor',
+                      child: Text('投稿者'),
+                    ),
+                    DropdownMenuItem(
+                      value: 'subscriber',
+                      child: Text('订阅者'),
+                    ),
+                  ],
+                  onChanged: (value) {
+                    setState(() {
+                      _role = value ?? '';
+                      _page = 1;
+                    });
+                    _loadUsers();
+                  },
+                  decoration: const InputDecoration(labelText: '角色筛选'),
+                );
+
+                if (stacked) {
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      searchField,
+                      SizedBox(height: compact ? 10 : 12),
+                      roleField,
+                    ],
+                  );
+                }
+
+                return Row(
+                  children: [
+                    Expanded(child: searchField),
+                    const SizedBox(width: 10),
+                    SizedBox(width: 180, child: roleField),
+                  ],
+                );
+              },
+            ),
+          ],
+          SizedBox(height: compact ? 16 : 24),
           if (_message != null) ...[
             InfoBanner(message: _message!, isError: _isError),
             SizedBox(height: compact ? 12 : 16),
@@ -555,44 +542,48 @@ class _SystemWorkspaceScreenState extends State<SystemWorkspaceScreen> {
 
   List<Widget> _buildSettingsContent(BuildContext context) {
     final compact = isCompactLayout(context);
-    return _settingsSections
-        .map(
-          (section) => Padding(
-            padding: EdgeInsets.only(bottom: compact ? 10 : 14),
-            child: SurfaceCard(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+    return [
+      Padding(
+        padding: EdgeInsets.only(bottom: compact ? 10 : 14),
+        child: const ThemePickerSection(),
+      ),
+      ..._settingsSections.map(
+        (section) => Padding(
+          padding: EdgeInsets.only(bottom: compact ? 10 : 14),
+          child: SurfaceCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  section.title,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                if (section.subtitle.isNotEmpty) ...[
+                  SizedBox(height: compact ? 4 : 6),
                   Text(
-                    section.title,
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w800,
+                    section.subtitle,
+                    maxLines: compact ? 2 : null,
+                    overflow: compact ? TextOverflow.ellipsis : null,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: AppTheme.textMuted,
                     ),
                   ),
-                  if (section.subtitle.isNotEmpty) ...[
-                    SizedBox(height: compact ? 4 : 6),
-                    Text(
-                      section.subtitle,
-                      maxLines: compact ? 2 : null,
-                      overflow: compact ? TextOverflow.ellipsis : null,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: AppTheme.textMuted,
-                      ),
-                    ),
-                  ],
-                  SizedBox(height: compact ? 12 : 16),
-                  ...section.fields.expand((field) {
-                    return [
-                      _buildSettingField(field),
-                      SizedBox(height: compact ? 10 : 14),
-                    ];
-                  }).toList()..removeLast(),
                 ],
-              ),
+                SizedBox(height: compact ? 12 : 16),
+                ...section.fields.expand((field) {
+                  return [
+                    _buildSettingField(field),
+                    SizedBox(height: compact ? 10 : 14),
+                  ];
+                }).toList()..removeLast(),
+              ],
             ),
           ),
-        )
-        .toList();
+        ),
+      ),
+    ];
   }
 
   Widget _buildSettingField(_SettingField field) {
@@ -602,8 +593,7 @@ class _SystemWorkspaceScreenState extends State<SystemWorkspaceScreen> {
         padding: EdgeInsets.all(compact ? 12 : 16),
         decoration: BoxDecoration(
           color: AppTheme.surfaceMuted,
-          borderRadius: BorderRadius.circular(compact ? 18 : 22),
-          border: Border.all(color: AppTheme.border),
+          borderRadius: BorderRadius.circular(compact ? 14 : 18),
         ),
         child: Row(
           children: [
@@ -698,59 +688,78 @@ class _UserCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final compact = isCompactLayout(context);
+    final theme = Theme.of(context);
     final title = user.name.isEmpty ? '未命名用户' : user.name;
     final subtitle = user.email.isEmpty ? user.slug : user.email;
     return SurfaceCard(
       padding: EdgeInsets.symmetric(
-        horizontal: compact ? 12 : 14,
-        vertical: compact ? 10 : 12,
+        horizontal: compact ? 16 : 20,
+        vertical: compact ? 14 : 16,
       ),
       child: Row(
         children: [
           _UserAvatar(name: title, avatarUrl: _avatarUrl),
-          const SizedBox(width: 10),
-          _SystemBadge(
-            label: roleLabel(user.primaryRole),
-            tint: const Color(0xFF6A5168),
-          ),
-          const SizedBox(width: 10),
+          const SizedBox(width: 12),
           Expanded(
-            child: Text(
-              '$title · ${subtitle.isEmpty ? '未设置账号' : subtitle}',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: Theme.of(
-                context,
-              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Row(
+                  children: [
+                    Text(
+                      roleLabel(user.primaryRole),
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: AppTheme.accent,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    if (subtitle.isNotEmpty) ...[
+                      const SizedBox(width: 10),
+                      Text(
+                        '·',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: AppTheme.textMuted,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Flexible(
+                        child: Text(
+                          subtitle,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: AppTheme.textMuted,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ],
             ),
           ),
-          if (user.registeredDate.isNotEmpty) ...[
-            const SizedBox(width: 10),
-            SizedBox(
-              width: compact ? 84 : 98,
-              child: Text(
-                formatCompactDate(user.registeredDate),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                textAlign: TextAlign.right,
-                style: Theme.of(
-                  context,
-                ).textTheme.bodySmall?.copyWith(color: AppTheme.textMuted),
-              ),
-            ),
-          ],
-          const SizedBox(width: 4),
           IconButton(
             onPressed: canManage ? onEdit : null,
             tooltip: '编辑用户',
-            icon: const Icon(Icons.edit_rounded),
-            visualDensity: VisualDensity.compact,
+            iconSize: 16,
+            icon: const Icon(Icons.edit_outlined),
+            style: IconButton.styleFrom(foregroundColor: AppTheme.textMuted),
           ),
           IconButton(
             onPressed: canManage ? onDelete : null,
             tooltip: '删除用户',
-            icon: const Icon(Icons.person_remove_alt_1_rounded),
-            visualDensity: VisualDensity.compact,
+            iconSize: 16,
+            icon: const Icon(Icons.person_remove_alt_1_outlined),
+            style: IconButton.styleFrom(foregroundColor: AppTheme.textMuted),
           ),
         ],
       ),
@@ -768,11 +777,11 @@ class _UserAvatar extends StatelessWidget {
   Widget build(BuildContext context) {
     if (avatarUrl.isNotEmpty) {
       return ClipRRect(
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(12),
         child: Image.network(
           avatarUrl,
-          width: 42,
-          height: 42,
+          width: 36,
+          height: 36,
           fit: BoxFit.cover,
           errorBuilder: (_, _, _) => _UserAvatarFallback(name: name),
         ),
@@ -790,43 +799,18 @@ class _UserAvatarFallback extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 42,
-      height: 42,
+      width: 36,
+      height: 36,
       decoration: BoxDecoration(
-        color: AppTheme.accentSoft,
-        borderRadius: BorderRadius.circular(14),
+        color: AppTheme.surfaceMuted,
+        borderRadius: BorderRadius.circular(12),
       ),
       alignment: Alignment.center,
       child: Text(
         (name.isEmpty ? 'U' : name.characters.first).toUpperCase(),
-        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-          color: AppTheme.inkPanel,
-          fontWeight: FontWeight.w700,
-        ),
-      ),
-    );
-  }
-}
-
-class _SystemBadge extends StatelessWidget {
-  const _SystemBadge({required this.label, required this.tint});
-
-  final String label;
-  final Color tint;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: tint.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Text(
-        label,
-        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-          color: tint,
-          fontWeight: FontWeight.w700,
+        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+          color: AppTheme.textMuted,
+          fontWeight: FontWeight.w600,
         ),
       ),
     );
@@ -946,7 +930,7 @@ class _UserEditorSheetState extends State<_UserEditorSheet> {
     return Padding(
       padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
       child: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           color: AppTheme.surface,
           borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
         ),

@@ -7,14 +7,14 @@ bool isCompactLayout(BuildContext context) => MediaQuery.sizeOf(context).width <
 EdgeInsets pageContentPadding(
   BuildContext context, {
   double top = 0,
-  double bottom = 20,
+  double bottom = 24,
 }) {
   final compact = isCompactLayout(context);
   return EdgeInsets.fromLTRB(
-    compact ? 12 : 16,
+    compact ? 14 : 20,
     top,
-    compact ? 12 : 16,
-    compact ? 14 : bottom,
+    compact ? 14 : 20,
+    compact ? 18 : bottom,
   );
 }
 
@@ -26,7 +26,7 @@ class AppBackdrop extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DecoratedBox(
-      decoration: const BoxDecoration(color: AppTheme.canvas),
+      decoration: BoxDecoration(color: AppTheme.canvas),
       child: Stack(
         children: [
           Positioned(
@@ -34,7 +34,10 @@ class AppBackdrop extends StatelessWidget {
             left: -60,
             child: _GlowBlob(
               size: 320,
-              colors: [AppTheme.accentSoft, AppTheme.canvas],
+              colors: [
+                AppTheme.accent.withValues(alpha: 0.14),
+                AppTheme.canvas.withValues(alpha: 0),
+              ],
             ),
           ),
           Positioned(
@@ -42,7 +45,10 @@ class AppBackdrop extends StatelessWidget {
             top: 100,
             child: _GlowBlob(
               size: 280,
-              colors: [Color(0x33D96C3D), Color(0x00D96C3D)],
+              colors: [
+                AppTheme.accent.withValues(alpha: 0.10),
+                AppTheme.canvas.withValues(alpha: 0),
+              ],
             ),
           ),
           Positioned(
@@ -50,7 +56,10 @@ class AppBackdrop extends StatelessWidget {
             right: -40,
             child: _GlowBlob(
               size: 380,
-              colors: [Color(0x22173630), Color(0x00FFFFFF)],
+              colors: [
+                AppTheme.inkPanelSoft.withValues(alpha: 0.40),
+                AppTheme.canvas.withValues(alpha: 0),
+              ],
             ),
           ),
           child,
@@ -86,30 +95,37 @@ class SurfaceCard extends StatelessWidget {
     super.key,
     required this.child,
     this.padding = const EdgeInsets.all(20),
+    this.outlined = false,
   });
 
   final Widget child;
   final EdgeInsetsGeometry padding;
+
+  /// Draw a thin outline instead of the default shadow. Useful for cards that
+  /// sit on busy backgrounds (e.g. inside gradients).
+  final bool outlined;
 
   @override
   Widget build(BuildContext context) {
     final compact = isCompactLayout(context);
     final defaultPadding = padding == const EdgeInsets.all(20);
     final resolvedPadding = defaultPadding
-        ? EdgeInsets.all(compact ? 14 : 20)
+        ? EdgeInsets.all(compact ? 18 : 24)
         : padding;
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: AppTheme.surface.withValues(alpha: 0.94),
-        borderRadius: BorderRadius.circular(compact ? 22 : 30),
-        border: Border.all(color: AppTheme.border),
-        boxShadow: [
-          BoxShadow(
-            color: Color(0x140F1614),
-            blurRadius: compact ? 20 : 30,
-            offset: Offset(0, compact ? 10 : 18),
-          ),
-        ],
+        color: AppTheme.surface,
+        borderRadius: BorderRadius.circular(compact ? 16 : 20),
+        border: outlined ? Border.all(color: AppTheme.border) : null,
+        boxShadow: outlined
+            ? null
+            : [
+                BoxShadow(
+                  color: AppTheme.shadow,
+                  blurRadius: compact ? 14 : 20,
+                  offset: Offset(0, compact ? 4 : 8),
+                ),
+              ],
       ),
       child: Padding(padding: resolvedPadding, child: child),
     );
@@ -137,9 +153,10 @@ class SectionHeading extends StatelessWidget {
       children: [
         Text(
           title,
-          style: compact
-              ? theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800)
-              : theme.textTheme.headlineSmall,
+          style: (compact
+                  ? theme.textTheme.titleLarge
+                  : theme.textTheme.headlineSmall)
+              ?.copyWith(fontWeight: FontWeight.w600, letterSpacing: -0.2),
         ),
         SizedBox(height: compact ? 4 : 6),
         Text(
@@ -208,7 +225,10 @@ class ActionSectionHeader extends StatelessWidget {
                 style: (compact
                         ? theme.textTheme.titleLarge
                         : theme.textTheme.headlineSmall)
-                    ?.copyWith(fontWeight: FontWeight.w800),
+                    ?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: -0.2,
+                    ),
               ),
             ),
             if (actions.isNotEmpty) ...[
@@ -265,36 +285,46 @@ class MetricTile extends StatelessWidget {
     final compact = isCompactLayout(context);
     return Container(
       width: compact ? 172 : 220,
-      padding: EdgeInsets.all(compact ? 14 : 18),
+      padding: EdgeInsets.symmetric(
+        horizontal: compact ? 16 : 20,
+        vertical: compact ? 16 : 20,
+      ),
       decoration: BoxDecoration(
         color: AppTheme.surfaceMuted,
-        borderRadius: BorderRadius.circular(compact ? 18 : 24),
-        border: Border.all(color: AppTheme.border),
+        borderRadius: BorderRadius.circular(compact ? 14 : 18),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: compact ? 36 : 42,
-            height: compact ? 36 : 42,
-            decoration: BoxDecoration(
-              color: tint.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(compact ? 12 : 14),
-            ),
-            child: Icon(icon, size: compact ? 18 : 22, color: tint),
+          Row(
+            children: [
+              Icon(icon, size: 16, color: tint),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: AppTheme.textMuted,
+                    fontWeight: FontWeight.w500,
+                    letterSpacing: 0.2,
+                  ),
+                ),
+              ),
+            ],
           ),
-          SizedBox(height: compact ? 10 : 16),
+          SizedBox(height: compact ? 18 : 24),
           Text(
             value,
-            style: (compact ? theme.textTheme.titleLarge : theme.textTheme.headlineSmall)?.copyWith(
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: AppTheme.textMuted,
+            style: (compact
+                    ? theme.textTheme.headlineSmall
+                    : theme.textTheme.headlineMedium)
+                ?.copyWith(
+              fontWeight: FontWeight.w600,
+              letterSpacing: -0.5,
+              height: 1.0,
+              fontFeatures: const [FontFeature.tabularFigures()],
             ),
           ),
         ],
@@ -315,17 +345,33 @@ class InfoBanner extends StatelessWidget {
     return Container(
       width: double.infinity,
       padding: EdgeInsets.symmetric(
-        horizontal: compact ? 12 : 16,
-        vertical: compact ? 10 : 14,
+        horizontal: compact ? 12 : 14,
+        vertical: compact ? 10 : 12,
       ),
       decoration: BoxDecoration(
-        color: isError ? const Color(0xFFF8E8E6) : const Color(0xFFEAF4EE),
-        borderRadius: BorderRadius.circular(compact ? 14 : 18),
-        border: Border.all(
-          color: isError ? const Color(0xFFD8A7A3) : const Color(0xFFB8D0C0),
-        ),
+        color: isError ? AppTheme.errorBg : AppTheme.infoBg,
+        borderRadius: BorderRadius.circular(compact ? 12 : 14),
       ),
-      child: Text(message),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            isError ? Icons.error_outline_rounded : Icons.check_circle_outline_rounded,
+            size: 16,
+            color: isError ? AppTheme.danger : AppTheme.success,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              message,
+              style: TextStyle(
+                color: isError ? AppTheme.danger : AppTheme.success,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -346,24 +392,16 @@ class EmptyStateCard extends StatelessWidget {
     final compact = isCompactLayout(context);
     return SurfaceCard(
       padding: EdgeInsets.symmetric(
-        horizontal: compact ? 14 : 16,
-        vertical: compact ? 12 : 14,
+        horizontal: compact ? 16 : 20,
+        vertical: compact ? 16 : 20,
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: compact ? 32 : 36,
-            height: compact ? 32 : 36,
-            decoration: BoxDecoration(
-              color: AppTheme.surfaceMuted,
-              borderRadius: BorderRadius.circular(compact ? 10 : 12),
-            ),
-            child: Icon(
-              Icons.inbox_rounded,
-              size: compact ? 16 : 18,
-              color: AppTheme.textMuted,
-            ),
+          Icon(
+            Icons.inbox_outlined,
+            size: 18,
+            color: AppTheme.textMuted,
           ),
           SizedBox(width: compact ? 10 : 12),
           Expanded(
@@ -372,14 +410,16 @@ class EmptyStateCard extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: (compact ? theme.textTheme.titleMedium : theme.textTheme.titleLarge)
-                      ?.copyWith(fontWeight: FontWeight.w700),
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
-                SizedBox(height: compact ? 3 : 6),
+                SizedBox(height: compact ? 4 : 6),
                 Text(
                   subtitle,
-                  style: (compact ? theme.textTheme.bodySmall : theme.textTheme.bodyMedium)
-                      ?.copyWith(color: AppTheme.textMuted),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: AppTheme.textMuted,
+                  ),
                 ),
               ],
             ),
@@ -404,16 +444,16 @@ class BootPanel extends StatelessWidget {
       constraints: const BoxConstraints(maxWidth: 440),
       child: SurfaceCard(
         padding: EdgeInsets.symmetric(
-          horizontal: compact ? 14 : 16,
-          vertical: compact ? 12 : 14,
+          horizontal: compact ? 16 : 20,
+          vertical: compact ? 16 : 20,
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             SizedBox(
-              width: compact ? 22 : 24,
-              height: compact ? 22 : 24,
-              child: const CircularProgressIndicator(strokeWidth: 2.6),
+              width: 20,
+              height: 20,
+              child: const CircularProgressIndicator(strokeWidth: 2),
             ),
             SizedBox(width: compact ? 10 : 12),
             Expanded(
@@ -423,14 +463,16 @@ class BootPanel extends StatelessWidget {
                 children: [
                   Text(
                     title,
-                    style: (compact ? theme.textTheme.titleMedium : theme.textTheme.titleLarge)
-                        ?.copyWith(fontWeight: FontWeight.w700),
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
-                  SizedBox(height: compact ? 3 : 6),
+                  SizedBox(height: compact ? 4 : 6),
                   Text(
                     subtitle,
-                    style: (compact ? theme.textTheme.bodySmall : theme.textTheme.bodyMedium)
-                        ?.copyWith(color: AppTheme.textMuted),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: AppTheme.textMuted,
+                    ),
                   ),
                 ],
               ),
@@ -461,75 +503,52 @@ class PaginationCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final compact = isCompactLayout(context);
+    final theme = Theme.of(context);
     final pageLabel = '第 $currentPage / $totalPages 页';
 
-    if (compact) {
-      return SurfaceCard(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        child: Row(
-          children: [
-            SizedBox(
-              width: 42,
-              height: 38,
-              child: OutlinedButton(
-                onPressed: currentPage <= 1 ? null : onPrevious,
-                style: OutlinedButton.styleFrom(
-                  padding: EdgeInsets.zero,
-                  visualDensity: VisualDensity.compact,
-                ),
-                child: const Icon(Icons.arrow_back_rounded),
-              ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                pageLabel,
-                textAlign: TextAlign.center,
-                style: Theme.of(
-                  context,
-                ).textTheme.bodySmall?.copyWith(color: AppTheme.textMuted),
-              ),
-            ),
-            const SizedBox(width: 8),
-            SizedBox(
-              width: 42,
-              height: 38,
-              child: FilledButton(
-                onPressed: currentPage >= totalPages ? null : onNext,
-                style: FilledButton.styleFrom(
-                  padding: EdgeInsets.zero,
-                  visualDensity: VisualDensity.compact,
-                ),
-                child: const Icon(Icons.arrow_forward_rounded),
-              ),
-            ),
-          ],
-        ),
-      );
-    }
+    final prevEnabled = currentPage > 1;
+    final nextEnabled = currentPage < totalPages;
 
-    return SurfaceCard(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+    final labelStyle = theme.textTheme.bodySmall?.copyWith(
+      color: AppTheme.textMuted,
+      fontFeatures: const [FontFeature.tabularFigures()],
+    );
+
+    return Padding(
+      padding: EdgeInsets.symmetric(
+        horizontal: compact ? 4 : 8,
+        vertical: compact ? 8 : 12,
+      ),
       child: Row(
         children: [
-          OutlinedButton.icon(
-            onPressed: currentPage <= 1 ? null : onPrevious,
-            icon: const Icon(Icons.arrow_back_rounded),
-            label: const Text('上一页'),
+          IconButton(
+            onPressed: prevEnabled ? onPrevious : null,
+            iconSize: 18,
+            padding: const EdgeInsets.all(8),
+            constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+            tooltip: '上一页',
+            icon: Icon(
+              Icons.arrow_back_rounded,
+              color: prevEnabled ? AppTheme.text : AppTheme.textMuted,
+            ),
           ),
           Expanded(
             child: Text(
               pageLabel,
               textAlign: TextAlign.center,
-              style: Theme.of(
-                context,
-              ).textTheme.bodyMedium?.copyWith(color: AppTheme.textMuted),
+              style: labelStyle,
             ),
           ),
-          FilledButton.icon(
-            onPressed: currentPage >= totalPages ? null : onNext,
-            icon: const Icon(Icons.arrow_forward_rounded),
-            label: Text(nextLabel),
+          IconButton(
+            onPressed: nextEnabled ? onNext : null,
+            iconSize: 18,
+            padding: const EdgeInsets.all(8),
+            constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+            tooltip: nextLabel,
+            icon: Icon(
+              Icons.arrow_forward_rounded,
+              color: nextEnabled ? AppTheme.accent : AppTheme.textMuted,
+            ),
           ),
         ],
       ),

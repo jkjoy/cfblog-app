@@ -67,16 +67,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
           SurfaceCard(
             padding: const EdgeInsets.all(0),
             child: Container(
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [AppTheme.inkPanel, AppTheme.inkPanelSoft],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
-                borderRadius: BorderRadius.all(Radius.circular(30)),
+                borderRadius:
+                    BorderRadius.circular(compact ? 18 : 22),
               ),
               child: Padding(
-                padding: EdgeInsets.all(compact ? 16 : 22),
+                padding: EdgeInsets.all(compact ? 12 : 16),
                 child: LayoutBuilder(
                   builder: (context, constraints) {
                     return Column(
@@ -84,72 +85,71 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       children: [
                         Text(
                           '工作区入口',
-                          style: (compact
-                                  ? Theme.of(context).textTheme.titleSmall
-                                  : Theme.of(context).textTheme.titleMedium)
-                              ?.copyWith(
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
                                 color: AppTheme.inkMuted,
-                                fontWeight: FontWeight.w700,
+                                fontWeight: FontWeight.w500,
+                                fontSize: 11,
+                                letterSpacing: 0.4,
                               ),
                         ),
-                        SizedBox(height: compact ? 10 : 14),
+                        SizedBox(height: compact ? 10 : 12),
                         Wrap(
-                          spacing: compact ? 8 : 12,
-                          runSpacing: compact ? 8 : 12,
+                          spacing: compact ? 6 : 8,
+                          runSpacing: compact ? 6 : 8,
                           children: [
                             _WorkspaceLaunchCard(
                               title: '文章',
                               icon: Icons.article_rounded,
-                              tint: AppTheme.accent,
+                              tint: const Color(0xFF60A5FA),
                               onTap: widget.onOpenPosts,
                               dark: true,
                             ),
                             _WorkspaceLaunchCard(
                               title: '页面',
                               icon: Icons.web_rounded,
-                              tint: const Color(0xFF8CC5B7),
+                              tint: const Color(0xFF5EEAD4),
                               onTap: widget.onOpenPages,
                               dark: true,
                             ),
                             _WorkspaceLaunchCard(
                               title: '动态',
                               icon: Icons.bolt_rounded,
-                              tint: const Color(0xFFE0BC78),
+                              tint: AppTheme.warning,
                               onTap: widget.onOpenMoments,
                               dark: true,
                             ),
                             _WorkspaceLaunchCard(
                               title: '评论',
                               icon: Icons.forum_rounded,
-                              tint: const Color(0xFF9DDFBF),
+                              tint: AppTheme.success,
                               onTap: widget.onOpenComments,
                               dark: true,
                             ),
                             _WorkspaceLaunchCard(
                               title: '媒体',
                               icon: Icons.perm_media_rounded,
-                              tint: const Color(0xFFC2B4FF),
+                              tint: const Color(0xFFF472B6),
                               onTap: widget.onOpenMedia,
                               dark: true,
                             ),
                             _WorkspaceLaunchCard(
                               title: '分类标签',
                               icon: Icons.folder_copy_rounded,
-                              tint: const Color(0xFF8CC5B7),
+                              tint: const Color(0xFF34D399),
                               onTap: widget.onOpenTaxonomies,
                               dark: true,
                             ),
                             _WorkspaceLaunchCard(
                               title: '友链',
                               icon: Icons.link_rounded,
-                              tint: const Color(0xFFE2C28D),
+                              tint: const Color(0xFFFBBF24),
                               onTap: widget.onOpenLinks,
                               dark: true,
                             ),
                             _WorkspaceLaunchCard(
                               title: '系统',
                               icon: Icons.tune_rounded,
-                              tint: const Color(0xFFD6BFE0),
+                              tint: const Color(0xFFA78BFA),
                               onTap: widget.onOpenSystem,
                               dark: true,
                             ),
@@ -199,32 +199,43 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 style: (compact
                                         ? Theme.of(context).textTheme.titleLarge
                                         : Theme.of(context).textTheme.headlineSmall)
-                                    ?.copyWith(fontWeight: FontWeight.w800),
+                                    ?.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                  letterSpacing: -0.3,
+                                ),
                               ),
                             ),
-                            OutlinedButton.icon(
+                            TextButton.icon(
                               onPressed: () => _reload(refresh: true),
-                              icon: const Icon(Icons.refresh_rounded),
+                              icon: const Icon(Icons.refresh_rounded, size: 16),
                               label: const Text('刷新'),
+                              style: TextButton.styleFrom(
+                                foregroundColor: AppTheme.textMuted,
+                                minimumSize: const Size(0, 36),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 6,
+                                ),
+                              ),
                             ),
                           ],
                         ),
-                        SizedBox(height: compact ? 12 : 18),
+                        SizedBox(height: compact ? 16 : 24),
                         Wrap(
-                          spacing: compact ? 10 : 12,
-                          runSpacing: compact ? 10 : 12,
+                          spacing: compact ? 10 : 14,
+                          runSpacing: compact ? 10 : 14,
                           children: [
                             _QuickMetricTile(
                               label: '文章',
                               value: '${data.posts}',
                               icon: Icons.article_rounded,
-                              tint: AppTheme.accent,
+                              tint: const Color(0xFF60A5FA),
                             ),
                             _QuickMetricTile(
                               label: '页面',
                               value: '${data.pages}',
                               icon: Icons.web_rounded,
-                              tint: const Color(0xFF21544B),
+                              tint: const Color(0xFF5EEAD4),
                             ),
                             _QuickMetricTile(
                               label: '动态',
@@ -242,13 +253,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               label: '媒体',
                               value: '${data.media}',
                               icon: Icons.perm_media_rounded,
-                              tint: const Color(0xFF6953B4),
+                              tint: const Color(0xFFF472B6),
                             ),
                             _QuickMetricTile(
                               label: '用户',
                               value: '${data.users}',
                               icon: Icons.people_alt_rounded,
-                              tint: const Color(0xFF7A5A25),
+                              tint: const Color(0xFFA78BFA),
                             ),
                           ],
                         ),
@@ -283,40 +294,50 @@ class _QuickMetricTile extends StatelessWidget {
     final compact = isCompactLayout(context);
     final theme = Theme.of(context);
     return Container(
-      width: compact ? 104 : 126,
+      width: compact ? 112 : 136,
       padding: EdgeInsets.symmetric(
         horizontal: compact ? 10 : 12,
         vertical: compact ? 10 : 12,
       ),
       decoration: BoxDecoration(
         color: AppTheme.surfaceMuted,
-        borderRadius: BorderRadius.circular(compact ? 18 : 20),
-        border: Border.all(color: AppTheme.border),
+        borderRadius: BorderRadius.circular(compact ? 12 : 14),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Container(
-            width: compact ? 30 : 34,
-            height: compact ? 30 : 34,
-            decoration: BoxDecoration(
-              color: tint.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(compact ? 10 : 12),
-            ),
-            child: Icon(icon, size: compact ? 16 : 18, color: tint),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 13, color: tint),
+              const SizedBox(width: 6),
+              Flexible(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: AppTheme.textMuted,
+                    fontWeight: FontWeight.w500,
+                    fontSize: 11,
+                    letterSpacing: 0.2,
+                  ),
+                ),
+              ),
+            ],
           ),
           SizedBox(height: compact ? 8 : 10),
           Text(
             value,
-            style: (compact ? theme.textTheme.titleMedium : theme.textTheme.titleLarge)
-                ?.copyWith(fontWeight: FontWeight.w800),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            label,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: AppTheme.textMuted,
-              fontWeight: FontWeight.w700,
+            textAlign: TextAlign.center,
+            style: theme.textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.w600,
+              letterSpacing: -0.4,
+              height: 1.0,
+              fontSize: compact ? 20 : 22,
+              fontFeatures: const [FontFeature.tabularFigures()],
             ),
           ),
         ],
@@ -343,53 +364,40 @@ class _WorkspaceLaunchCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final compact = isCompactLayout(context);
-    final width = compact ? 104.0 : 132.0;
+    final width = compact ? 78.0 : 96.0;
     return Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(compact ? 18 : 22),
+        borderRadius: BorderRadius.circular(compact ? 12 : 14),
         child: Ink(
           width: width,
           padding: EdgeInsets.symmetric(
-            horizontal: compact ? 12 : 14,
-            vertical: compact ? 12 : 14,
+            horizontal: compact ? 8 : 10,
+            vertical: compact ? 10 : 12,
           ),
           decoration: BoxDecoration(
             color: dark
-                ? Colors.white.withValues(alpha: 0.08)
+                ? Colors.white.withValues(alpha: 0.06)
                 : AppTheme.surfaceMuted,
-            borderRadius: BorderRadius.circular(compact ? 18 : 22),
-            border: Border.all(
-              color: dark
-                  ? Colors.white.withValues(alpha: 0.12)
-                  : AppTheme.border,
-            ),
+            borderRadius: BorderRadius.circular(compact ? 12 : 14),
           ),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Container(
-                width: compact ? 34 : 38,
-                height: compact ? 34 : 38,
-                decoration: BoxDecoration(
-                  color: tint.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(compact ? 10 : 12),
-                ),
-                child: Icon(icon, size: compact ? 18 : 20, color: tint),
-              ),
-              SizedBox(height: compact ? 10 : 12),
+              Icon(icon, size: 18, color: tint),
+              const SizedBox(height: 8),
               Text(
                 title,
-                maxLines: compact ? 2 : 1,
+                maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: (compact
-                        ? Theme.of(context).textTheme.titleSmall
-                        : Theme.of(context).textTheme.titleMedium)
-                    ?.copyWith(
-                      fontWeight: FontWeight.w800,
-                      color: dark ? Colors.white : AppTheme.text,
-                    ),
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  fontWeight: FontWeight.w500,
+                  fontSize: 12,
+                  color: dark ? Colors.white : AppTheme.text,
+                ),
               ),
             ],
           ),

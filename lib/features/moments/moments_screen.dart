@@ -159,50 +159,45 @@ class _MomentsScreenState extends State<MomentsScreen> {
       child: ListView(
         padding: pageContentPadding(context),
         children: [
-          SurfaceCard(
-            padding: EdgeInsets.all(compact ? 12 : 14),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    FilledButton.tonalIcon(
-                      onPressed: () => _loadMoments(refresh: true),
-                      style: toolbarButtonStyle,
-                      icon: const Icon(Icons.refresh_rounded),
-                      label: const Text('刷新'),
-                    ),
-                    FilledButton.icon(
-                      onPressed: () => _openEditor(),
-                      style: toolbarButtonStyle,
-                      icon: const Icon(Icons.bolt_rounded),
-                      label: const Text('发动态'),
-                    ),
-                  ],
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              TextButton.icon(
+                onPressed: () => _loadMoments(refresh: true),
+                icon: const Icon(Icons.refresh_rounded, size: 16),
+                label: const Text('刷新'),
+                style: TextButton.styleFrom(
+                  foregroundColor: AppTheme.textMuted,
+                  minimumSize: const Size(0, 36),
                 ),
-                SizedBox(height: compact ? 10 : 12),
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: SelectionChipBar<String>(
-                    items: _statusOptions,
-                    value: _status,
-                    labelBuilder: (status) =>
-                        status == 'all' ? '全部' : statusLabel(status),
-                    onSelected: (status) {
-                      setState(() {
-                        _status = status;
-                        _page = 1;
-                      });
-                      _loadMoments();
-                    },
-                  ),
-                ),
-              ],
-            ),
+              ),
+              FilledButton.icon(
+                onPressed: () => _openEditor(),
+                style: toolbarButtonStyle,
+                icon: const Icon(Icons.bolt_outlined, size: 16),
+                label: const Text('发动态'),
+              ),
+            ],
           ),
           SizedBox(height: compact ? 12 : 16),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: SelectionChipBar<String>(
+              items: _statusOptions,
+              value: _status,
+              labelBuilder: (status) =>
+                  status == 'all' ? '全部' : statusLabel(status),
+              onSelected: (status) {
+                setState(() {
+                  _status = status;
+                  _page = 1;
+                });
+                _loadMoments();
+              },
+            ),
+          ),
+          SizedBox(height: compact ? 16 : 24),
           if (_message != null) ...[
             InfoBanner(message: _message!, isError: _isError),
             SizedBox(height: compact ? 12 : 16),
@@ -217,7 +212,7 @@ class _MomentsScreenState extends State<MomentsScreen> {
           else
             ..._items.map(
               (moment) => Padding(
-                padding: EdgeInsets.only(bottom: compact ? 10 : 14),
+                padding: EdgeInsets.only(bottom: compact ? 10 : 12),
                 child: _MomentCard(
                   moment: moment,
                   onEdit: () => _openEditor(moment: moment),
@@ -225,7 +220,7 @@ class _MomentsScreenState extends State<MomentsScreen> {
                 ),
               ),
             ),
-          SizedBox(height: compact ? 2 : 4),
+          SizedBox(height: compact ? 4 : 8),
           PaginationCard(
             currentPage: _page,
             totalPages: _totalPages,
@@ -262,84 +257,88 @@ class _MomentCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final compact = isCompactLayout(context);
+    final theme = Theme.of(context);
     final preview = _momentPreview(stripHtml(moment.content), maxLength: 56);
+    final timestamp = formatCompactDate(
+      moment.modified.isEmpty ? moment.date : moment.modified,
+    );
     return SurfaceCard(
       padding: EdgeInsets.symmetric(
-        horizontal: compact ? 12 : 14,
-        vertical: compact ? 10 : 12,
+        horizontal: compact ? 16 : 20,
+        vertical: compact ? 14 : 16,
       ),
       child: Row(
         children: [
-          _MomentBadge(label: statusLabel(moment.status)),
-          if (moment.mediaUrls.isNotEmpty) ...[
-            const SizedBox(width: 8),
-            Icon(
-              Icons.photo_library_outlined,
-              size: 16,
-              color: AppTheme.textMuted,
-            ),
-          ],
-          const SizedBox(width: 10),
           Expanded(
-            child: Text(
-              preview,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: Theme.of(
-                context,
-              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  preview,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w500,
+                    height: 1.35,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Row(
+                  children: [
+                    Text(
+                      statusLabel(moment.status),
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: AppTheme.textMuted,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    if (moment.mediaUrls.isNotEmpty) ...[
+                      const SizedBox(width: 10),
+                      Icon(
+                        Icons.photo_library_outlined,
+                        size: 13,
+                        color: AppTheme.textMuted,
+                      ),
+                    ],
+                    const SizedBox(width: 10),
+                    Text(
+                      '·',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: AppTheme.textMuted,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Flexible(
+                      child: Text(
+                        timestamp,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: AppTheme.textMuted,
+                          fontFeatures: const [FontFeature.tabularFigures()],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
-          const SizedBox(width: 10),
-          SizedBox(
-            width: compact ? 74 : 84,
-            child: Text(
-              formatCompactDate(moment.modified.isEmpty ? moment.date : moment.modified),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              textAlign: TextAlign.right,
-              style: Theme.of(
-                context,
-              ).textTheme.bodySmall?.copyWith(color: AppTheme.textMuted),
-            ),
-          ),
-          const SizedBox(width: 4),
           IconButton(
             onPressed: onEdit,
             tooltip: '编辑动态',
-            icon: const Icon(Icons.edit_rounded),
-            visualDensity: VisualDensity.compact,
+            iconSize: 16,
+            icon: const Icon(Icons.edit_outlined),
+            style: IconButton.styleFrom(foregroundColor: AppTheme.textMuted),
           ),
           IconButton(
             onPressed: onDelete,
             tooltip: '删除动态',
+            iconSize: 16,
             icon: const Icon(Icons.delete_outline_rounded),
-            visualDensity: VisualDensity.compact,
+            style: IconButton.styleFrom(foregroundColor: AppTheme.textMuted),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _MomentBadge extends StatelessWidget {
-  const _MomentBadge({required this.label});
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: AppTheme.surfaceMuted,
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Text(
-        label,
-        style: Theme.of(
-          context,
-        ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w700),
       ),
     );
   }
@@ -493,7 +492,7 @@ class _MomentEditorSheetState extends State<_MomentEditorSheet> {
     return Padding(
       padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
       child: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           color: AppTheme.surface,
           borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
         ),
@@ -874,7 +873,7 @@ class _MomentMediaFallback extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
+    return Center(
       child: Icon(
         Icons.insert_drive_file_rounded,
         size: 20,

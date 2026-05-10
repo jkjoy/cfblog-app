@@ -17,6 +17,7 @@ import 'features/posts/posts_screen.dart';
 import 'features/system/system_workspace_screen.dart';
 import 'features/taxonomies/taxonomies_screen.dart';
 import 'theme/app_theme.dart';
+import 'theme/theme_controller.dart';
 import 'widgets/app_chrome.dart';
 
 class CfblogApp extends StatelessWidget {
@@ -24,11 +25,16 @@ class CfblogApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'CFBlog APP',
-      debugShowCheckedModeBanner: false,
-      theme: AppTheme.light(),
-      home: const _AppBootstrapper(),
+    return AnimatedBuilder(
+      animation: ThemeController.instance,
+      builder: (context, _) {
+        return MaterialApp(
+          title: 'CFBlog APP',
+          debugShowCheckedModeBanner: false,
+          theme: AppTheme.active(),
+          home: const _AppBootstrapper(),
+        );
+      },
     );
   }
 }
@@ -439,14 +445,7 @@ class _Sidebar extends StatelessWidget {
       margin: const EdgeInsets.fromLTRB(20, 16, 0, 20),
       decoration: BoxDecoration(
         color: AppTheme.inkPanel,
-        borderRadius: BorderRadius.circular(32),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x240F1614),
-            blurRadius: 36,
-            offset: Offset(0, 18),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(24),
       ),
       child: Padding(
         padding: const EdgeInsets.fromLTRB(22, 24, 22, 22),
@@ -479,14 +478,14 @@ class _Sidebar extends StatelessWidget {
                   children: [
                     CircleAvatar(
                       radius: 24,
-                      backgroundColor: AppTheme.accentSoft,
+                      backgroundColor: AppTheme.accent,
                       child: Text(
                         (session.user.name.isEmpty
                                 ? 'C'
                                 : session.user.name.characters.first)
                             .toUpperCase(),
                         style: theme.textTheme.titleLarge?.copyWith(
-                          color: AppTheme.inkPanel,
+                          color: const Color(0xFF1A1200),
                           fontWeight: FontWeight.w700,
                         ),
                       ),
@@ -620,18 +619,10 @@ class _MobileWorkspaceHeader extends StatelessWidget {
     final theme = Theme.of(context);
     final siteLabel = discovery?.name ?? session.user.name;
     return SurfaceCard(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       child: Row(
         children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: item.tint.withValues(alpha: 0.16),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Icon(item.icon, size: 20, color: item.tint),
-          ),
+          Icon(item.icon, size: 20, color: item.tint),
           const SizedBox(width: 10),
           Expanded(
             child: Column(
@@ -656,27 +647,20 @@ class _MobileWorkspaceHeader extends StatelessWidget {
               ],
             ),
           ),
-          IconButton.filledTonal(
+          IconButton(
             onPressed: onOpenSiteSheet,
-            visualDensity: VisualDensity.compact,
-            padding: const EdgeInsets.all(10),
-            style: IconButton.styleFrom(
-              backgroundColor: AppTheme.surfaceMuted,
-              foregroundColor: AppTheme.text,
-            ),
-            icon: const Icon(Icons.dns_rounded, size: 18),
+            iconSize: 18,
+            padding: const EdgeInsets.all(8),
+            constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+            icon: Icon(Icons.dns_rounded, color: AppTheme.textMuted),
             tooltip: '站点信息',
           ),
-          const SizedBox(width: 6),
-          IconButton.filled(
+          IconButton(
             onPressed: onOpenMore,
-            visualDensity: VisualDensity.compact,
-            padding: const EdgeInsets.all(10),
-            style: IconButton.styleFrom(
-              backgroundColor: item.tint,
-              foregroundColor: Colors.white,
-            ),
-            icon: const Icon(Icons.grid_view_rounded, size: 18),
+            iconSize: 18,
+            padding: const EdgeInsets.all(8),
+            constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+            icon: Icon(Icons.grid_view_rounded, color: item.tint),
             tooltip: '全部工作区',
           ),
         ],
@@ -802,34 +786,23 @@ class _MobileComposeItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final color = selected ? AppTheme.accent : AppTheme.text;
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(18),
+      borderRadius: BorderRadius.circular(14),
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
+        padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              width: 32,
-              height: 32,
-              decoration: BoxDecoration(
-                color: selected ? AppTheme.accent : AppTheme.inkPanel,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(
-                icon,
-                size: 18,
-                color: Colors.white,
-              ),
-            ),
+            Icon(icon, size: 22, color: color),
             const SizedBox(height: 4),
             Text(
               label,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: selected ? AppTheme.accent : AppTheme.textMuted,
+                color: color,
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -1200,7 +1173,7 @@ _WorkspaceNavItem _workspaceItemFor(WorkspaceTab tab) {
   return _workspaceItems.firstWhere((item) => item.tab == tab);
 }
 
-const List<_WorkspaceNavItem> _workspaceItems = [
+List<_WorkspaceNavItem> get _workspaceItems => [
   _WorkspaceNavItem(
     tab: WorkspaceTab.overview,
     label: '总览',
@@ -1212,35 +1185,35 @@ const List<_WorkspaceNavItem> _workspaceItems = [
     tab: WorkspaceTab.posts,
     label: '文章',
     icon: Icons.article_rounded,
-    tint: AppTheme.inkPanel,
+    tint: const Color(0xFF60A5FA),
     group: _WorkspaceNavGroupKey.publishing,
   ),
   _WorkspaceNavItem(
     tab: WorkspaceTab.taxonomies,
     label: '分类标签',
     icon: Icons.folder_copy_rounded,
-    tint: Color(0xFF21544B),
+    tint: const Color(0xFF34D399),
     group: _WorkspaceNavGroupKey.publishing,
   ),
   _WorkspaceNavItem(
     tab: WorkspaceTab.links,
     label: '友链',
     icon: Icons.link_rounded,
-    tint: Color(0xFF7A5A25),
+    tint: const Color(0xFFFBBF24),
     group: _WorkspaceNavGroupKey.operations,
   ),
   _WorkspaceNavItem(
     tab: WorkspaceTab.system,
     label: '系统',
     icon: Icons.tune_rounded,
-    tint: Color(0xFF6A5168),
+    tint: const Color(0xFFA78BFA),
     group: _WorkspaceNavGroupKey.system,
   ),
   _WorkspaceNavItem(
     tab: WorkspaceTab.pages,
     label: '页面',
     icon: Icons.web_rounded,
-    tint: Color(0xFF4C6A61),
+    tint: const Color(0xFF5EEAD4),
     group: _WorkspaceNavGroupKey.publishing,
   ),
   _WorkspaceNavItem(
@@ -1254,7 +1227,7 @@ const List<_WorkspaceNavItem> _workspaceItems = [
     tab: WorkspaceTab.media,
     label: '媒体',
     icon: Icons.perm_media_rounded,
-    tint: Color(0xFF6953B4),
+    tint: const Color(0xFFF472B6),
     group: _WorkspaceNavGroupKey.publishing,
   ),
   _WorkspaceNavItem(

@@ -1,185 +1,258 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-class AppTheme {
-  static const Color canvas = Color(0xFFF1ECE4);
-  static const Color surface = Color(0xFFFFFCF7);
-  static const Color surfaceMuted = Color(0xFFF6F0E8);
-  static const Color border = Color(0xFFD7CBBE);
-  static const Color text = Color(0xFF1E2824);
-  static const Color textMuted = Color(0xFF67736D);
-  static const Color accent = Color(0xFFD96C3D);
-  static const Color accentSoft = Color(0xFFF6D7C8);
-  static const Color success = Color(0xFF2F7A59);
-  static const Color warning = Color(0xFFA46A18);
-  static const Color danger = Color(0xFFAB4949);
-  static const Color inkPanel = Color(0xFF173630);
-  static const Color inkPanelSoft = Color(0xFF22443E);
-  static const Color inkMuted = Color(0xFFC2D0CA);
+import 'app_palette.dart';
+import 'theme_controller.dart';
 
-  static ThemeData light() {
-    final scheme =
-        ColorScheme.fromSeed(
-          seedColor: accent,
-          brightness: Brightness.light,
-        ).copyWith(
-          primary: accent,
-          secondary: const Color(0xFF21544B),
-          surface: surface,
-          surfaceContainerHighest: surfaceMuted,
-          outline: border,
-          error: danger,
-          onPrimary: Colors.white,
-          onSurface: text,
-          onSecondary: Colors.white,
-        );
+/// Exposes the active palette as static getters so existing call sites
+/// (`AppTheme.canvas`, `AppTheme.accent` …) continue to work while the
+/// underlying palette can be swapped at runtime.
+class AppTheme {
+  const AppTheme._();
+
+  static AppPalette get palette => ThemeController.instance.palette;
+
+  static Color get canvas => palette.canvas;
+  static Color get surface => palette.surface;
+  static Color get surfaceMuted => palette.surfaceMuted;
+  static Color get border => palette.border;
+  static Color get text => palette.text;
+  static Color get textMuted => palette.textMuted;
+  static Color get accent => palette.accent;
+  static Color get accentSoft => palette.accentSoft;
+  static Color get onAccent => palette.onAccent;
+  static Color get success => palette.success;
+  static Color get warning => palette.warning;
+  static Color get danger => palette.danger;
+  static Color get inkPanel => palette.inkPanel;
+  static Color get inkPanelSoft => palette.inkPanelSoft;
+  static Color get inkMuted => palette.inkMuted;
+  static Color get infoBg => palette.infoBg;
+  static Color get infoBorder => palette.infoBorder;
+  static Color get errorBg => palette.errorBg;
+  static Color get errorBorder => palette.errorBorder;
+  static Color get shadow => palette.shadow;
+
+  /// Builds a [ThemeData] from the given [palette]. Each palette has its own
+  /// cached theme so rebuilds on switch are cheap.
+  static ThemeData themeFor(AppPalette palette) {
+    final scheme = ColorScheme.fromSeed(
+      seedColor: palette.accent,
+      brightness: palette.brightness,
+    ).copyWith(
+      primary: palette.accent,
+      onPrimary: palette.onAccent,
+      surface: palette.surface,
+      onSurface: palette.text,
+      surfaceContainerHighest: palette.surfaceMuted,
+      outline: palette.border,
+      outlineVariant: palette.border,
+      error: palette.danger,
+    );
 
     final base = ThemeData(
       useMaterial3: true,
+      brightness: palette.brightness,
       colorScheme: scheme,
-      scaffoldBackgroundColor: canvas,
+      scaffoldBackgroundColor: palette.canvas,
+      canvasColor: palette.canvas,
     );
 
-    final bodyText = GoogleFonts.ibmPlexSansTextTheme(base.textTheme);
-    final display = GoogleFonts.spaceGroteskTextTheme(base.textTheme);
+    final bodyText = GoogleFonts.interTextTheme(base.textTheme);
 
     return base.copyWith(
       splashFactory: InkRipple.splashFactory,
       textTheme: bodyText.copyWith(
-        displayLarge: display.displayLarge?.copyWith(
-          color: text,
-          fontWeight: FontWeight.w700,
+        displayLarge: bodyText.displayLarge?.copyWith(
+          color: palette.text,
+          fontWeight: FontWeight.w600,
+          letterSpacing: -0.8,
         ),
-        displayMedium: display.displayMedium?.copyWith(
-          color: text,
-          fontWeight: FontWeight.w700,
+        displayMedium: bodyText.displayMedium?.copyWith(
+          color: palette.text,
+          fontWeight: FontWeight.w600,
+          letterSpacing: -0.6,
         ),
-        displaySmall: display.displaySmall?.copyWith(
-          color: text,
-          fontWeight: FontWeight.w700,
+        displaySmall: bodyText.displaySmall?.copyWith(
+          color: palette.text,
+          fontWeight: FontWeight.w600,
+          letterSpacing: -0.4,
         ),
-        headlineLarge: display.headlineLarge?.copyWith(
-          color: text,
-          fontWeight: FontWeight.w700,
+        headlineLarge: bodyText.headlineLarge?.copyWith(
+          color: palette.text,
+          fontWeight: FontWeight.w600,
+          letterSpacing: -0.3,
         ),
-        headlineMedium: display.headlineMedium?.copyWith(
-          color: text,
-          fontWeight: FontWeight.w700,
+        headlineMedium: bodyText.headlineMedium?.copyWith(
+          color: palette.text,
+          fontWeight: FontWeight.w600,
+          letterSpacing: -0.2,
         ),
-        headlineSmall: display.headlineSmall?.copyWith(
-          color: text,
-          fontWeight: FontWeight.w700,
+        headlineSmall: bodyText.headlineSmall?.copyWith(
+          color: palette.text,
+          fontWeight: FontWeight.w600,
+          letterSpacing: -0.2,
         ),
-        titleLarge: display.titleLarge?.copyWith(
-          color: text,
-          fontWeight: FontWeight.w700,
+        titleLarge: bodyText.titleLarge?.copyWith(
+          color: palette.text,
+          fontWeight: FontWeight.w600,
+          letterSpacing: -0.1,
         ),
         titleMedium: bodyText.titleMedium?.copyWith(
-          color: text,
-          fontWeight: FontWeight.w700,
+          color: palette.text,
+          fontWeight: FontWeight.w600,
         ),
-        bodyLarge: bodyText.bodyLarge?.copyWith(color: text, height: 1.45),
-        bodyMedium: bodyText.bodyMedium?.copyWith(color: text, height: 1.45),
-        bodySmall: bodyText.bodySmall?.copyWith(color: textMuted, height: 1.4),
+        titleSmall: bodyText.titleSmall?.copyWith(
+          color: palette.text,
+          fontWeight: FontWeight.w600,
+        ),
+        bodyLarge: bodyText.bodyLarge?.copyWith(color: palette.text, height: 1.5),
+        bodyMedium: bodyText.bodyMedium?.copyWith(color: palette.text, height: 1.5),
+        bodySmall: bodyText.bodySmall?.copyWith(color: palette.textMuted, height: 1.45),
       ),
-      dividerColor: border,
+      dividerColor: palette.border,
+      iconTheme: IconThemeData(color: palette.text, size: 18),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
-          backgroundColor: accent,
-          foregroundColor: Colors.white,
-          minimumSize: const Size(0, 52),
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          backgroundColor: palette.accent,
+          foregroundColor: palette.onAccent,
+          disabledBackgroundColor: palette.surfaceMuted,
+          disabledForegroundColor: palette.textMuted,
+          minimumSize: const Size(0, 44),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(18),
+            borderRadius: BorderRadius.circular(14),
           ),
           textStyle: bodyText.titleMedium?.copyWith(
             fontWeight: FontWeight.w700,
+            fontSize: 14,
           ),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          foregroundColor: text,
-          side: const BorderSide(color: border),
-          minimumSize: const Size(0, 52),
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+          foregroundColor: palette.text,
+          disabledForegroundColor: palette.textMuted,
+          side: BorderSide(color: palette.border),
+          minimumSize: const Size(0, 44),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(18),
+            borderRadius: BorderRadius.circular(14),
           ),
           textStyle: bodyText.titleMedium?.copyWith(
             fontWeight: FontWeight.w600,
+            fontSize: 14,
           ),
         ),
       ),
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
-          foregroundColor: text,
-          minimumSize: const Size(0, 48),
+          foregroundColor: palette.text,
+          minimumSize: const Size(0, 40),
           textStyle: bodyText.titleMedium?.copyWith(
             fontWeight: FontWeight.w600,
+            fontSize: 14,
           ),
+        ),
+      ),
+      iconButtonTheme: IconButtonThemeData(
+        style: IconButton.styleFrom(
+          foregroundColor: palette.textMuted,
+          hoverColor: palette.accent.withValues(alpha: 0.10),
+          splashFactory: InkRipple.splashFactory,
+          minimumSize: const Size(36, 36),
+          iconSize: 18,
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: surface,
+        fillColor: palette.surfaceMuted,
         contentPadding: const EdgeInsets.symmetric(
-          horizontal: 18,
-          vertical: 16,
+          horizontal: 14,
+          vertical: 12,
         ),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(18),
-          borderSide: const BorderSide(color: border),
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide(color: palette.border),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(18),
-          borderSide: const BorderSide(color: border),
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide(color: palette.border),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(18),
-          borderSide: const BorderSide(color: accent, width: 1.4),
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide(color: palette.accent, width: 1.4),
         ),
-        hintStyle: bodyText.bodyMedium?.copyWith(color: textMuted),
-        labelStyle: bodyText.bodyMedium?.copyWith(color: textMuted),
+        hintStyle: bodyText.bodyMedium?.copyWith(color: palette.textMuted),
+        labelStyle: bodyText.bodyMedium?.copyWith(color: palette.textMuted),
       ),
       chipTheme: base.chipTheme.copyWith(
-        backgroundColor: surfaceMuted,
-        selectedColor: inkPanel,
-        side: const BorderSide(color: border),
+        backgroundColor: palette.surfaceMuted,
+        selectedColor: palette.accent,
+        side: BorderSide(color: palette.border),
         labelStyle: bodyText.bodyMedium?.copyWith(
-          color: text,
+          color: palette.text,
           fontWeight: FontWeight.w600,
         ),
         secondaryLabelStyle: bodyText.bodyMedium?.copyWith(
-          color: Colors.white,
-          fontWeight: FontWeight.w600,
+          color: palette.onAccent,
+          fontWeight: FontWeight.w700,
         ),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
       ),
       cardTheme: CardThemeData(
-        color: surface,
+        color: palette.surface,
         surfaceTintColor: Colors.transparent,
         margin: EdgeInsets.zero,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       ),
       navigationBarTheme: NavigationBarThemeData(
-        backgroundColor: surface,
-        indicatorColor: accentSoft,
+        backgroundColor: palette.surface,
+        indicatorColor: palette.accentSoft,
         labelTextStyle: WidgetStateProperty.resolveWith(
           (states) => bodyText.bodySmall?.copyWith(
             fontWeight: states.contains(WidgetState.selected)
                 ? FontWeight.w700
                 : FontWeight.w600,
-            color: text,
+            color: states.contains(WidgetState.selected)
+                ? palette.accent
+                : palette.textMuted,
+          ),
+        ),
+        iconTheme: WidgetStateProperty.resolveWith(
+          (states) => IconThemeData(
+            color: states.contains(WidgetState.selected)
+                ? palette.accent
+                : palette.textMuted,
           ),
         ),
       ),
       snackBarTheme: SnackBarThemeData(
         behavior: SnackBarBehavior.floating,
-        backgroundColor: inkPanel,
-        contentTextStyle: bodyText.bodyMedium?.copyWith(color: Colors.white),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        backgroundColor: palette.inkPanelSoft,
+        contentTextStyle: bodyText.bodyMedium?.copyWith(color: palette.text),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(color: palette.border),
+        ),
       ),
+      dialogTheme: DialogThemeData(
+        backgroundColor: palette.surface,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
+      ),
+      bottomSheetTheme: const BottomSheetThemeData(
+        surfaceTintColor: Colors.transparent,
+      ).copyWith(backgroundColor: palette.surface),
+      dividerTheme: DividerThemeData(color: palette.border, space: 1),
+      progressIndicatorTheme:
+          ProgressIndicatorThemeData(color: palette.accent),
     );
   }
+
+  /// Convenience: theme for the current palette.
+  static ThemeData active() => themeFor(palette);
+
+  /// Back-compat shim for existing tests and legacy call sites.
+  static ThemeData light() => themeFor(palette);
 }

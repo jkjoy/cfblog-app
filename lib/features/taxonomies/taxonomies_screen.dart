@@ -202,89 +202,72 @@ class _TaxonomiesScreenState extends State<TaxonomiesScreen> {
       child: ListView(
         padding: pageContentPadding(context),
         children: [
-          SurfaceCard(
-            padding: EdgeInsets.all(compact ? 12 : 14),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    FilledButton.tonalIcon(
-                      onPressed: () => _loadTerms(refresh: true),
-                      style: toolbarButtonStyle,
-                      icon: const Icon(Icons.refresh_rounded),
-                      label: const Text('刷新'),
-                    ),
-                    FilledButton.icon(
-                      onPressed: () => _openEditor(),
-                      style: toolbarButtonStyle,
-                      icon: Icon(
-                        _isCategory
-                            ? Icons.create_new_folder_rounded
-                            : Icons.sell_rounded,
-                      ),
-                      label: Text(_createLabel),
-                    ),
-                  ],
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              TextButton.icon(
+                onPressed: () => _loadTerms(refresh: true),
+                icon: const Icon(Icons.refresh_rounded, size: 16),
+                label: const Text('刷新'),
+                style: TextButton.styleFrom(
+                  foregroundColor: AppTheme.textMuted,
+                  minimumSize: const Size(0, 36),
                 ),
-                SizedBox(height: compact ? 10 : 12),
-                SegmentedButton<_TaxonomyKind>(
-                  segments: const [
-                    ButtonSegment<_TaxonomyKind>(
-                      value: _TaxonomyKind.category,
-                      icon: Icon(Icons.folder_copy_rounded),
-                      label: Text('分类'),
-                    ),
-                    ButtonSegment<_TaxonomyKind>(
-                      value: _TaxonomyKind.tag,
-                      icon: Icon(Icons.local_offer_rounded),
-                      label: Text('标签'),
-                    ),
-                  ],
-                  selected: {_kind},
-                  onSelectionChanged: (selection) {
-                    if (selection.isEmpty) {
-                      return;
-                    }
-                    _switchKind(selection.first);
-                  },
+              ),
+              FilledButton.icon(
+                onPressed: () => _openEditor(),
+                style: toolbarButtonStyle,
+                icon: Icon(
+                  _isCategory
+                      ? Icons.create_new_folder_outlined
+                      : Icons.sell_outlined,
+                  size: 16,
                 ),
-                SizedBox(height: compact ? 10 : 12),
-                LayoutBuilder(
-                  builder: (context, constraints) {
-                    final stacked = constraints.maxWidth < 860;
-                    final searchField = TextField(
-                      controller: _searchController,
-                      textInputAction: TextInputAction.search,
-                      onSubmitted: (_) => _submitSearch(),
-                      decoration: InputDecoration(
-                        isDense: true,
-                        hintText: _isCategory ? '搜索分类' : '搜索标签',
-                        prefixIcon: const Icon(Icons.search_rounded),
-                        suffixIcon: IconButton(
-                          onPressed: _submitSearch,
-                          tooltip: '搜索',
-                          icon: const Icon(Icons.arrow_forward_rounded),
-                        ),
-                      ),
-                    );
-
-                    if (stacked) {
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [searchField],
-                      );
-                    }
-
-                    return Row(children: [Expanded(child: searchField)]);
-                  },
-                ),
-              ],
-            ),
+                label: Text(_createLabel),
+              ),
+            ],
           ),
           SizedBox(height: compact ? 12 : 16),
+          SegmentedButton<_TaxonomyKind>(
+            segments: const [
+              ButtonSegment<_TaxonomyKind>(
+                value: _TaxonomyKind.category,
+                icon: Icon(Icons.folder_copy_outlined, size: 16),
+                label: Text('分类'),
+              ),
+              ButtonSegment<_TaxonomyKind>(
+                value: _TaxonomyKind.tag,
+                icon: Icon(Icons.local_offer_outlined, size: 16),
+                label: Text('标签'),
+              ),
+            ],
+            selected: {_kind},
+            onSelectionChanged: (selection) {
+              if (selection.isEmpty) {
+                return;
+              }
+              _switchKind(selection.first);
+            },
+          ),
+          SizedBox(height: compact ? 12 : 16),
+          TextField(
+            controller: _searchController,
+            textInputAction: TextInputAction.search,
+            onSubmitted: (_) => _submitSearch(),
+            decoration: InputDecoration(
+              isDense: true,
+              hintText: _isCategory ? '搜索分类' : '搜索标签',
+              prefixIcon: const Icon(Icons.search_rounded, size: 18),
+              suffixIcon: IconButton(
+                onPressed: _submitSearch,
+                tooltip: '搜索',
+                iconSize: 18,
+                icon: const Icon(Icons.arrow_forward_rounded),
+              ),
+            ),
+          ),
+          SizedBox(height: compact ? 16 : 24),
           if (_message != null) ...[
             InfoBanner(message: _message!, isError: _isError),
             SizedBox(height: compact ? 12 : 16),
@@ -304,7 +287,7 @@ class _TaxonomiesScreenState extends State<TaxonomiesScreen> {
           else
             ..._items.map(
               (term) => Padding(
-                padding: EdgeInsets.only(bottom: compact ? 10 : 14),
+                padding: EdgeInsets.only(bottom: compact ? 10 : 12),
                 child: _TaxonomyCard(
                   kind: _kind,
                   term: term,
@@ -313,7 +296,7 @@ class _TaxonomiesScreenState extends State<TaxonomiesScreen> {
                 ),
               ),
             ),
-          SizedBox(height: compact ? 2 : 4),
+          SizedBox(height: compact ? 4 : 8),
           PaginationCard(
             currentPage: _page,
             totalPages: _totalPages,
@@ -354,77 +337,68 @@ class _TaxonomyCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final compact = isCompactLayout(context);
+    final theme = Theme.of(context);
     final title =
         term.name.isEmpty ? (_isCategory ? '未命名分类' : '未命名标签') : term.name;
     return SurfaceCard(
       padding: EdgeInsets.symmetric(
-        horizontal: compact ? 12 : 14,
-        vertical: compact ? 10 : 12,
+        horizontal: compact ? 16 : 20,
+        vertical: compact ? 14 : 16,
       ),
       child: Row(
         children: [
-          _TermBadge(
-            label: _isCategory ? '分类' : '标签',
-            tint: _isCategory ? const Color(0xFF21544B) : AppTheme.accent,
-          ),
-          const SizedBox(width: 10),
           Expanded(
-            child: Text(
-              '$title · ${term.count} 篇',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: Theme.of(
-                context,
-              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    if (_isCategory && term.parent > 0) ...[
+                      Icon(
+                        Icons.subdirectory_arrow_right_rounded,
+                        size: 14,
+                        color: AppTheme.textMuted,
+                      ),
+                      const SizedBox(width: 6),
+                    ],
+                    Flexible(
+                      child: Text(
+                        title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  '${_isCategory ? '分类' : '标签'} · ${term.count} 篇',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: AppTheme.textMuted,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
             ),
           ),
-          if (_isCategory && term.parent > 0) ...[
-            const SizedBox(width: 8),
-            Icon(
-              Icons.subdirectory_arrow_right_rounded,
-              size: 16,
-              color: AppTheme.textMuted,
-            ),
-          ],
-          const SizedBox(width: 4),
           IconButton(
             onPressed: onEdit,
             tooltip: _isCategory ? '编辑分类' : '编辑标签',
-            icon: const Icon(Icons.edit_rounded),
-            visualDensity: VisualDensity.compact,
+            iconSize: 16,
+            icon: const Icon(Icons.edit_outlined),
+            style: IconButton.styleFrom(foregroundColor: AppTheme.textMuted),
           ),
           IconButton(
             onPressed: onDelete,
             tooltip: _isCategory ? '删除分类' : '删除标签',
+            iconSize: 16,
             icon: const Icon(Icons.delete_outline_rounded),
-            visualDensity: VisualDensity.compact,
+            style: IconButton.styleFrom(foregroundColor: AppTheme.textMuted),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _TermBadge extends StatelessWidget {
-  const _TermBadge({required this.label, required this.tint});
-
-  final String label;
-  final Color tint;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: tint.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Text(
-        label,
-        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-          color: tint,
-          fontWeight: FontWeight.w700,
-        ),
       ),
     );
   }
@@ -545,7 +519,7 @@ class _TaxonomyEditorSheetState extends State<_TaxonomyEditorSheet> {
     return Padding(
       padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
       child: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           color: AppTheme.surface,
           borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
         ),

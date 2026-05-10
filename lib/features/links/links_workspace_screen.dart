@@ -257,79 +257,75 @@ class _LinksWorkspaceScreenState extends State<LinksWorkspaceScreen> {
       child: ListView(
         padding: pageContentPadding(context),
         children: [
-          SurfaceCard(
-            padding: EdgeInsets.all(compact ? 12 : 14),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    FilledButton.tonalIcon(
-                      onPressed: () => _loadWorkspace(refresh: true),
-                      style: toolbarButtonStyle,
-                      icon: const Icon(Icons.refresh_rounded),
-                      label: const Text('刷新'),
-                    ),
-                    FilledButton.icon(
-                      onPressed: _isLinks
-                          ? () => _openLinkEditor()
-                          : () => _openCategoryEditor(),
-                      style: toolbarButtonStyle,
-                      icon: Icon(
-                        _isLinks
-                            ? Icons.add_link_rounded
-                            : Icons.label_rounded,
-                      ),
-                      label: Text(_isLinks ? '新建友链' : '新建友链分类'),
-                    ),
-                  ],
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              TextButton.icon(
+                onPressed: () => _loadWorkspace(refresh: true),
+                icon: const Icon(Icons.refresh_rounded, size: 16),
+                label: const Text('刷新'),
+                style: TextButton.styleFrom(
+                  foregroundColor: AppTheme.textMuted,
+                  minimumSize: const Size(0, 36),
                 ),
-                SizedBox(height: compact ? 10 : 12),
-                SegmentedButton<_LinksWorkspaceKind>(
-                  segments: const [
-                    ButtonSegment<_LinksWorkspaceKind>(
-                      value: _LinksWorkspaceKind.links,
-                      icon: Icon(Icons.link_rounded),
-                      label: Text('友链'),
-                    ),
-                    ButtonSegment<_LinksWorkspaceKind>(
-                      value: _LinksWorkspaceKind.categories,
-                      icon: Icon(Icons.account_tree_rounded),
-                      label: Text('友链分类'),
-                    ),
-                  ],
-                  selected: {_kind},
-                  onSelectionChanged: (selection) {
-                    if (selection.isEmpty) {
-                      return;
-                    }
-                    _switchKind(selection.first);
-                  },
+              ),
+              FilledButton.icon(
+                onPressed: _isLinks
+                    ? () => _openLinkEditor()
+                    : () => _openCategoryEditor(),
+                style: toolbarButtonStyle,
+                icon: Icon(
+                  _isLinks
+                      ? Icons.add_link_rounded
+                      : Icons.label_outlined,
+                  size: 16,
                 ),
-                if (_isLinks) ...[
-                  SizedBox(height: compact ? 10 : 12),
-                  SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: SelectionChipBar<String>(
-                      items: const ['yes', 'no'],
-                      value: _visible,
-                      labelBuilder: visibleLabel,
-                      onSelected: (visible) {
-                        setState(() {
-                          _visible = visible;
-                          _page = 1;
-                        });
-                        _loadWorkspace();
-                      },
-                    ),
-                  ),
-                ],
-              ],
-            ),
+                label: Text(_isLinks ? '新建友链' : '新建友链分类'),
+              ),
+            ],
           ),
           SizedBox(height: compact ? 12 : 16),
+          SegmentedButton<_LinksWorkspaceKind>(
+            segments: const [
+              ButtonSegment<_LinksWorkspaceKind>(
+                value: _LinksWorkspaceKind.links,
+                icon: Icon(Icons.link_rounded, size: 16),
+                label: Text('友链'),
+              ),
+              ButtonSegment<_LinksWorkspaceKind>(
+                value: _LinksWorkspaceKind.categories,
+                icon: Icon(Icons.account_tree_outlined, size: 16),
+                label: Text('友链分类'),
+              ),
+            ],
+            selected: {_kind},
+            onSelectionChanged: (selection) {
+              if (selection.isEmpty) {
+                return;
+              }
+              _switchKind(selection.first);
+            },
+          ),
+          if (_isLinks) ...[
+            SizedBox(height: compact ? 12 : 16),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: SelectionChipBar<String>(
+                items: const ['yes', 'no'],
+                value: _visible,
+                labelBuilder: visibleLabel,
+                onSelected: (visible) {
+                  setState(() {
+                    _visible = visible;
+                    _page = 1;
+                  });
+                  _loadWorkspace();
+                },
+              ),
+            ),
+          ],
+          SizedBox(height: compact ? 16 : 24),
           if (_message != null) ...[
             InfoBanner(message: _message!, isError: _isError),
             SizedBox(height: compact ? 12 : 16),
@@ -352,7 +348,7 @@ class _LinksWorkspaceScreenState extends State<LinksWorkspaceScreen> {
           else if (_isLinks)
             ..._links.map(
               (link) => Padding(
-                padding: EdgeInsets.only(bottom: compact ? 10 : 14),
+                padding: EdgeInsets.only(bottom: compact ? 10 : 12),
                 child: _LinkCard(
                   link: link,
                   onEdit: () => _openLinkEditor(link: link),
@@ -363,7 +359,7 @@ class _LinksWorkspaceScreenState extends State<LinksWorkspaceScreen> {
           else
             ..._categoryItems.map(
               (category) => Padding(
-                padding: EdgeInsets.only(bottom: compact ? 10 : 14),
+                padding: EdgeInsets.only(bottom: compact ? 10 : 12),
                 child: _LinkCategoryCard(
                   category: category,
                   onEdit: () => _openCategoryEditor(category: category),
@@ -371,7 +367,7 @@ class _LinksWorkspaceScreenState extends State<LinksWorkspaceScreen> {
                 ),
               ),
             ),
-          SizedBox(height: compact ? 2 : 4),
+          SizedBox(height: compact ? 4 : 8),
           PaginationCard(
             currentPage: _page,
             totalPages: _totalPages,
@@ -408,61 +404,103 @@ class _LinkCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final compact = isCompactLayout(context);
+    final theme = Theme.of(context);
     final title = link.name.isEmpty ? '未命名友链' : link.name;
     final category = link.category?.name.isNotEmpty == true
         ? link.category!.name
         : '未分类';
+    final timestamp = formatCompactDate(
+      link.updatedAt.isEmpty ? link.createdAt : link.updatedAt,
+    );
     return SurfaceCard(
       padding: EdgeInsets.symmetric(
-        horizontal: compact ? 12 : 14,
-        vertical: compact ? 10 : 12,
+        horizontal: compact ? 16 : 20,
+        vertical: compact ? 14 : 16,
       ),
       child: Row(
         children: [
           _LinkAvatar(url: link.avatar, label: title),
-          const SizedBox(width: 10),
-          _LinkBadge(
-            label: visibleLabel(link.visible),
-            tint: AppTheme.success,
-          ),
-          const SizedBox(width: 10),
+          const SizedBox(width: 12),
           Expanded(
-            child: Text(
-              '$title · $category',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: Theme.of(
-                context,
-              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        category,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: AppTheme.textMuted,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Text(
+                      '·',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: AppTheme.textMuted,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Text(
+                      visibleLabel(link.visible),
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: link.visible == 'yes'
+                            ? AppTheme.success
+                            : AppTheme.textMuted,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Text(
+                      '·',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: AppTheme.textMuted,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Flexible(
+                      child: Text(
+                        timestamp,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: AppTheme.textMuted,
+                          fontFeatures: const [FontFeature.tabularFigures()],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
-          const SizedBox(width: 10),
-          SizedBox(
-            width: compact ? 98 : 132,
-            child: Text(
-              formatCompactDate(
-                link.updatedAt.isEmpty ? link.createdAt : link.updatedAt,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              textAlign: TextAlign.right,
-              style: Theme.of(
-                context,
-              ).textTheme.bodySmall?.copyWith(color: AppTheme.textMuted),
-            ),
-          ),
-          const SizedBox(width: 4),
           IconButton(
             onPressed: onEdit,
             tooltip: '编辑友链',
-            icon: const Icon(Icons.edit_rounded),
-            visualDensity: VisualDensity.compact,
+            iconSize: 16,
+            icon: const Icon(Icons.edit_outlined),
+            style: IconButton.styleFrom(foregroundColor: AppTheme.textMuted),
           ),
           IconButton(
             onPressed: onDelete,
             tooltip: '删除友链',
+            iconSize: 16,
             icon: const Icon(Icons.delete_outline_rounded),
-            visualDensity: VisualDensity.compact,
+            style: IconButton.styleFrom(foregroundColor: AppTheme.textMuted),
           ),
         ],
       ),
@@ -484,64 +522,53 @@ class _LinkCategoryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final compact = isCompactLayout(context);
+    final theme = Theme.of(context);
+    final name = category.name.isEmpty ? '未命名分类' : category.name;
     return SurfaceCard(
       padding: EdgeInsets.symmetric(
-        horizontal: compact ? 12 : 14,
-        vertical: compact ? 10 : 12,
+        horizontal: compact ? 16 : 20,
+        vertical: compact ? 14 : 16,
       ),
       child: Row(
         children: [
-          _LinkBadge(label: '友链分类', tint: const Color(0xFF7A5A25)),
-          const SizedBox(width: 10),
           Expanded(
-            child: Text(
-              '${category.name.isEmpty ? '未命名分类' : category.name} · ${category.count} 条',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: Theme.of(
-                context,
-              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  '友链分类 · ${category.count} 条',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: AppTheme.textMuted,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
             ),
           ),
-          const SizedBox(width: 4),
           IconButton(
             onPressed: onEdit,
             tooltip: '编辑友链分类',
-            icon: const Icon(Icons.edit_rounded),
-            visualDensity: VisualDensity.compact,
+            iconSize: 16,
+            icon: const Icon(Icons.edit_outlined),
+            style: IconButton.styleFrom(foregroundColor: AppTheme.textMuted),
           ),
           IconButton(
             onPressed: onDelete,
             tooltip: '删除友链分类',
+            iconSize: 16,
             icon: const Icon(Icons.delete_outline_rounded),
-            visualDensity: VisualDensity.compact,
+            style: IconButton.styleFrom(foregroundColor: AppTheme.textMuted),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _LinkBadge extends StatelessWidget {
-  const _LinkBadge({required this.label, required this.tint});
-
-  final String label;
-  final Color tint;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: tint.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Text(
-        label,
-        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-          color: tint,
-          fontWeight: FontWeight.w700,
-        ),
       ),
     );
   }
@@ -557,11 +584,11 @@ class _LinkAvatar extends StatelessWidget {
   Widget build(BuildContext context) {
     if (url.isNotEmpty) {
       return ClipRRect(
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(12),
         child: Image.network(
           url,
-          width: 42,
-          height: 42,
+          width: 36,
+          height: 36,
           fit: BoxFit.cover,
           errorBuilder: (_, _, _) => _AvatarFallback(label: label),
         ),
@@ -579,18 +606,18 @@ class _AvatarFallback extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 42,
-      height: 42,
+      width: 36,
+      height: 36,
       decoration: BoxDecoration(
-        color: AppTheme.accentSoft,
-        borderRadius: BorderRadius.circular(14),
+        color: AppTheme.surfaceMuted,
+        borderRadius: BorderRadius.circular(12),
       ),
       alignment: Alignment.center,
       child: Text(
         (label.isEmpty ? 'L' : label.characters.first).toUpperCase(),
-        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-          color: AppTheme.inkPanel,
-          fontWeight: FontWeight.w700,
+        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+          color: AppTheme.textMuted,
+          fontWeight: FontWeight.w600,
         ),
       ),
     );
@@ -742,7 +769,7 @@ class _LinkEditorSheetState extends State<_LinkEditorSheet> {
     return Padding(
       padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
       child: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           color: AppTheme.surface,
           borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
         ),
@@ -1039,7 +1066,7 @@ class _LinkCategoryEditorSheetState extends State<_LinkCategoryEditorSheet> {
     return Padding(
       padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
       child: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           color: AppTheme.surface,
           borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
         ),

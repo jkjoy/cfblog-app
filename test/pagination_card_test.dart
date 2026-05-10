@@ -28,8 +28,8 @@ void main() {
       ),
     );
 
-    await tester.tap(find.text('上一页'));
-    await tester.tap(find.text('下一页'));
+    await tester.tap(find.byTooltip('上一页'));
+    await tester.tap(find.byTooltip('下一页'));
     await tester.pump();
 
     expect(previousTapped, isTrue);
@@ -51,15 +51,21 @@ void main() {
       ),
     );
 
-    final previousButton = tester.widget<OutlinedButton>(
-      find.byWidgetPredicate((widget) => widget is OutlinedButton),
+    final prev = tester.widget<IconButton>(
+      find.ancestor(
+        of: find.byIcon(Icons.arrow_back_rounded),
+        matching: find.byType(IconButton),
+      ),
     );
-    final nextButton = tester.widget<FilledButton>(
-      find.byWidgetPredicate((widget) => widget is FilledButton),
+    final next = tester.widget<IconButton>(
+      find.ancestor(
+        of: find.byIcon(Icons.arrow_forward_rounded),
+        matching: find.byType(IconButton),
+      ),
     );
 
-    expect(previousButton.onPressed, isNull);
-    expect(nextButton.onPressed, isNull);
+    expect(prev.onPressed, isNull);
+    expect(next.onPressed, isNull);
     expect(find.text('第 1 / 1 页'), findsOneWidget);
   });
 }

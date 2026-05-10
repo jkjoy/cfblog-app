@@ -135,99 +135,98 @@ class _PostsScreenState extends State<PostsScreen> {
       child: ListView(
         padding: pageContentPadding(context),
         children: [
-          SurfaceCard(
-            padding: EdgeInsets.all(compact ? 12 : 14),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                LayoutBuilder(
-                  builder: (context, constraints) {
-                    final stacked = constraints.maxWidth < 860;
-                    final searchField = TextField(
-                      controller: _searchController,
-                      textInputAction: TextInputAction.search,
-                      onSubmitted: (_) => _submitSearch(),
-                      decoration: InputDecoration(
-                        isDense: true,
-                        hintText: '搜索标题',
-                        prefixIcon: const Icon(Icons.search_rounded),
-                        suffixIcon: IconButton(
-                          onPressed: _submitSearch,
-                          tooltip: '搜索',
-                          icon: const Icon(Icons.arrow_forward_rounded),
-                        ),
-                      ),
-                    );
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final stacked = constraints.maxWidth < 860;
+              final searchField = TextField(
+                controller: _searchController,
+                textInputAction: TextInputAction.search,
+                onSubmitted: (_) => _submitSearch(),
+                decoration: InputDecoration(
+                  isDense: true,
+                  hintText: '搜索标题',
+                  prefixIcon: const Icon(Icons.search_rounded, size: 18),
+                  suffixIcon: IconButton(
+                    onPressed: _submitSearch,
+                    tooltip: '搜索',
+                    iconSize: 18,
+                    icon: const Icon(Icons.arrow_forward_rounded),
+                  ),
+                ),
+              );
 
-                    if (stacked) {
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          searchField,
-                          SizedBox(height: compact ? 10 : 12),
-                          Wrap(
-                            spacing: 8,
-                            runSpacing: 8,
-                            children: [
-                              FilledButton.tonalIcon(
-                                onPressed: () => _loadPosts(refresh: true),
-                                style: toolbarButtonStyle,
-                                icon: const Icon(Icons.refresh_rounded),
-                                label: const Text('刷新'),
-                              ),
-                              FilledButton.icon(
-                                onPressed: () => _openEditor(),
-                                style: toolbarButtonStyle,
-                                icon: const Icon(Icons.add_rounded),
-                                label: const Text('写文章'),
-                              ),
-                            ],
-                          ),
-                        ],
-                      );
-                    }
-
-                    return Row(
+              if (stacked) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    searchField,
+                    SizedBox(height: compact ? 10 : 12),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
                       children: [
-                        Expanded(child: searchField),
-                        const SizedBox(width: 10),
-                        FilledButton.tonalIcon(
+                        TextButton.icon(
                           onPressed: () => _loadPosts(refresh: true),
-                          style: toolbarButtonStyle,
-                          icon: const Icon(Icons.refresh_rounded),
+                          icon: const Icon(Icons.refresh_rounded, size: 16),
                           label: const Text('刷新'),
+                          style: TextButton.styleFrom(
+                            foregroundColor: AppTheme.textMuted,
+                            minimumSize: const Size(0, 36),
+                          ),
                         ),
-                        const SizedBox(width: 8),
                         FilledButton.icon(
                           onPressed: () => _openEditor(),
                           style: toolbarButtonStyle,
-                          icon: const Icon(Icons.add_rounded),
+                          icon: const Icon(Icons.add_rounded, size: 16),
                           label: const Text('写文章'),
                         ),
                       ],
-                    );
-                  },
-                ),
-                SizedBox(height: compact ? 10 : 12),
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: SelectionChipBar<String>(
-                    items: _statusOptions,
-                    value: _status,
-                    labelBuilder: statusLabel,
-                    onSelected: (status) {
-                      setState(() {
-                        _status = status;
-                        _page = 1;
-                      });
-                      _loadPosts();
-                    },
+                    ),
+                  ],
+                );
+              }
+
+              return Row(
+                children: [
+                  Expanded(child: searchField),
+                  const SizedBox(width: 12),
+                  TextButton.icon(
+                    onPressed: () => _loadPosts(refresh: true),
+                    icon: const Icon(Icons.refresh_rounded, size: 16),
+                    label: const Text('刷新'),
+                    style: TextButton.styleFrom(
+                      foregroundColor: AppTheme.textMuted,
+                      minimumSize: const Size(0, 40),
+                    ),
                   ),
-                ),
-              ],
-            ),
+                  const SizedBox(width: 6),
+                  FilledButton.icon(
+                    onPressed: () => _openEditor(),
+                    style: toolbarButtonStyle,
+                    icon: const Icon(Icons.add_rounded, size: 16),
+                    label: const Text('写文章'),
+                  ),
+                ],
+              );
+            },
           ),
           SizedBox(height: compact ? 12 : 16),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: SelectionChipBar<String>(
+              items: _statusOptions,
+              value: _status,
+              labelBuilder: statusLabel,
+              onSelected: (status) {
+                setState(() {
+                  _status = status;
+                  _page = 1;
+                });
+                _loadPosts();
+              },
+            ),
+          ),
+          SizedBox(height: compact ? 16 : 24),
           if (_error != null) ...[
             InfoBanner(message: _error!, isError: true),
             SizedBox(height: compact ? 12 : 16),
@@ -242,14 +241,14 @@ class _PostsScreenState extends State<PostsScreen> {
           else
             ..._posts.map(
               (post) => Padding(
-                padding: EdgeInsets.only(bottom: compact ? 10 : 14),
+                padding: EdgeInsets.only(bottom: compact ? 10 : 12),
                 child: _PostCard(
                   post: post,
                   onEdit: () => _openEditor(postId: post.id),
                 ),
               ),
             ),
-          SizedBox(height: compact ? 2 : 4),
+          SizedBox(height: compact ? 4 : 8),
           PaginationCard(
             currentPage: _page,
             totalPages: _totalPages,
@@ -281,95 +280,87 @@ class _PostCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final compact = isCompactLayout(context);
+    final theme = Theme.of(context);
     final title = stripHtml(post.title).isEmpty ? '未命名文章' : stripHtml(post.title);
     final rawTime = post.modified.isEmpty ? post.date : post.modified;
     return SurfaceCard(
       padding: EdgeInsets.symmetric(
-        horizontal: compact ? 12 : 14,
-        vertical: compact ? 10 : 12,
+        horizontal: compact ? 16 : 20,
+        vertical: compact ? 14 : 16,
       ),
       child: LayoutBuilder(
         builder: (context, constraints) {
           final useShortTime = compact || constraints.maxWidth < 640;
           final timestamp = formatCompactDate(rawTime, withYear: !useShortTime);
-          final timeWidth = useShortTime ? 74.0 : 124.0;
 
           return Row(
             children: [
-              _Badge(
-                label: statusLabel(post.status),
-                background: AppTheme.accentSoft,
-                foreground: AppTheme.accent,
-              ),
-              if (post.sticky) ...[
-                const SizedBox(width: 8),
-                Icon(Icons.push_pin_rounded, size: 16, color: AppTheme.success),
-              ],
-              const SizedBox(width: 10),
               Expanded(
-                child: Text(
-                  title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        Text(
+                          statusLabel(post.status),
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: AppTheme.accent,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        if (post.sticky) ...[
+                          const SizedBox(width: 10),
+                          Icon(
+                            Icons.push_pin_outlined,
+                            size: 13,
+                            color: AppTheme.textMuted,
+                          ),
+                        ],
+                        const SizedBox(width: 10),
+                        Text(
+                          '·',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: AppTheme.textMuted,
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Flexible(
+                          child: Text(
+                            timestamp,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: AppTheme.textMuted,
+                              fontFeatures: const [FontFeature.tabularFigures()],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(width: 10),
-              SizedBox(
-                width: timeWidth,
-                child: Text(
-                  timestamp,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  textAlign: TextAlign.right,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: AppTheme.textMuted,
-                    fontFeatures: const [FontFeature.tabularFigures()],
-                  ),
-                ),
-              ),
-              const SizedBox(width: 4),
               IconButton(
                 onPressed: onEdit,
                 tooltip: '编辑文章',
-                icon: const Icon(Icons.edit_rounded),
-                visualDensity: VisualDensity.compact,
+                iconSize: 16,
+                icon: const Icon(Icons.edit_outlined),
+                style: IconButton.styleFrom(
+                  foregroundColor: AppTheme.textMuted,
+                ),
               ),
             ],
           );
         },
-      ),
-    );
-  }
-}
-
-class _Badge extends StatelessWidget {
-  const _Badge({
-    required this.label,
-    required this.background,
-    required this.foreground,
-  });
-
-  final String label;
-  final Color background;
-  final Color foreground;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: background,
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Text(
-        label,
-        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-          color: foreground,
-          fontWeight: FontWeight.w700,
-        ),
       ),
     );
   }
